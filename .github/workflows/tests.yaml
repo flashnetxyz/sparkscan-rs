@@ -1,0 +1,48 @@
+name: Tests
+
+env:
+  CARGO_TERM_COLOR: always
+
+permissions:
+  contents: read
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  coverage:
+    name: Coverage with llvm-cov
+    runs-on: ubuntu-latest
+    env:
+      CARGO_TERM_COLOR: always
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: llvm-tools
+      - name: Cache rust files
+        uses: Swatinem/rust-cache@v2
+        with:
+          cache-on-failure: "true"
+          cache-all-crates: "true"
+
+      - uses: taiki-e/install-action@nextest
+      - uses: taiki-e/install-action@cargo-llvm-cov
+
+      - name: Generate code coverage for Codecov
+        run: make coverage-codecov
+      - name: Upload coverage reports to Codecov
+        uses: codecov/codecov-action@v5
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          slug: flashnetxyz/sparkscan-rs
+      - name: Upload test results to Codecov
+        if: ${{ !cancelled() }}
+        uses: codecov/test-results-action@v1
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          slug: flashnetxyz/sparkscan-rs
+          files: target/nextest/default/junit.xml

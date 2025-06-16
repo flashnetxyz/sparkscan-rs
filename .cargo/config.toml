@@ -1,0 +1,5 @@
+[alias]
+docs = "doc --all-features --no-deps"
+docsd = "doc --all --all-features --no-deps --document-private-items --open"
+coveragetd = "tarpaulin --all-features --workspace --timeout 120"
+coverageld = "llvm-cov --workspace --cobertura --output-path ./cobertura.xml"
