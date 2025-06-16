@@ -1,7 +1,12 @@
 [package]
 name = "sparkscan"
-version = "0.1.0"
+description = "A Rust client for the SparkScan API"
+version = "0.0.1"
+license = "Apache-2.0"
 edition = "2024"
+authors = ["Nejc Drobnic <nejc@flashnet.xyz>"]
+repository = "https://github.com/flashnetxyz/sparkscan-rs.git"
+homepage = "https://github.com/flashnetxyz/sparkscan-rs"
 
 [dependencies]
 futures = { version = "0.3.31" }
@@ -9,6 +14,8 @@ progenitor-client = { version = "0.11.0" }
 reqwest = { version = "0.12.20", features = ["json", "stream"] }
 serde = { version = "1.0.219", features = ["derive"] }
 serde_json = { version = "1.0.140" }
+chrono = { version = "0.4.41", features = ["serde"] }
+regress = { version = "0.10.3" }
 
 [build-dependencies]
 prettyplease = { version = "0.2.34" }
