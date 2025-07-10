@@ -1,12 +1,16 @@
 [package]
 name = "sparkscan"
 description = "A Rust client for the SparkScan API"
-version = "0.0.4"
+version = "0.1.0"
 license = "Apache-2.0"
 edition = "2024"
 authors = ["Nejc Drobnic <nejc@flashnet.xyz>"]
 repository = "https://github.com/flashnetxyz/sparkscan-rs.git"
 homepage = "https://github.com/flashnetxyz/sparkscan-rs"
+
+[features]
+default = []
+tracing = ["dep:tracing", "dep:reqwest-tracing", "dep:reqwest-middleware"]
 
 [dependencies]
 futures = { version = "0.3.31" }
@@ -17,8 +21,14 @@ serde_json = { version = "1.0.140" }
 chrono = { version = "0.4.41", features = ["serde"] }
 regress = { version = "0.10.3" }
 
+# Tracing
+tracing = { version = "0.1.41", optional = true }
+reqwest-middleware = { version = "0.4.2", optional = true, features = ["json"] }
+reqwest-tracing = { version = "0.5.8", optional = true }
+
 [build-dependencies]
 prettyplease = { version = "0.2.34" }
 progenitor = { version = "0.11.0" }
 serde_json = { version = "1.0.140" }
-syn = { version = "2.0.103" }
+syn = { version = "2.0.103", features = ["visit-mut"] }
+cfg-if = { version = "1.0.1" }
