@@ -55,13 +55,10 @@ impl syn::visit_mut::VisitMut for ClientHeadersModifier {
         if is_client_impl && item.trait_.is_none() {
             for impl_item in &mut item.items {
                 if let syn::ImplItem::Fn(method) = impl_item {
-                    match method.sig.ident.to_string().as_str() {
-                        "new" => {
-                            method.block = parse_quote! {{
-                                Self::new_with_client(baseurl, Self::base_client())
-                            }};
-                        }
-                        _ => {}
+                    if method.sig.ident.to_string().as_str() == "new" {
+                        method.block = parse_quote! {{
+                            Self::new_with_client(baseurl, Self::base_client())
+                        }};
                     }
                 }
             }
