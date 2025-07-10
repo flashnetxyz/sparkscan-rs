@@ -1,6 +1,6 @@
 cfg_if::cfg_if! {
     if #[cfg(feature = "tracing")] {
-        use syn::{ItemImpl, ItemStruct, parse_quote, visit_mut::VisitMut};
+        use syn::{ItemImpl, ItemStruct, parse_quote, visit_mut::VisitMut, ItemMod};
     } else {
         use syn::{ItemImpl, parse_quote, visit_mut::VisitMut};
     }
@@ -22,11 +22,14 @@ fn main() {
 
     let mut headers_modifier = ClientHeadersModifier::new();
     headers_modifier.visit_file_mut(&mut ast);
-    // Only apply modifications if tracing feature is enabled
+
     #[cfg(feature = "tracing")]
     {
         let mut tracing_modifier = ClientTracingModifier;
         tracing_modifier.visit_file_mut(&mut ast);
+
+        let mut builder_instrumenter = BuilderSendInstrumenter::new();
+        builder_instrumenter.visit_file_mut(&mut ast);
     }
 
     let content = prettyplease::unparse(&ast);
@@ -179,6 +182,66 @@ impl syn::visit_mut::VisitMut for ClientTracingModifier {
                         method.block = parse_quote! {{
                             unimplemented!("client() method is not supported when using middleware")
                         }};
+                    }
+                }
+            }
+        }
+
+        syn::visit_mut::visit_item_impl_mut(self, item);
+    }
+}
+
+#[cfg(feature = "tracing")]
+struct BuilderSendInstrumenter {
+    in_builder_module: bool,
+}
+
+#[cfg(feature = "tracing")]
+impl BuilderSendInstrumenter {
+    fn new() -> Self {
+        Self {
+            in_builder_module: false,
+        }
+    }
+}
+
+#[cfg(feature = "tracing")]
+impl syn::visit_mut::VisitMut for BuilderSendInstrumenter {
+    fn visit_item_mod_mut(&mut self, module: &mut ItemMod) {
+        // Check if this is the builder module
+        if module.ident == "builder" {
+            let old_state = self.in_builder_module;
+            self.in_builder_module = true;
+
+            // Visit the module contents
+            syn::visit_mut::visit_item_mod_mut(self, module);
+
+            self.in_builder_module = old_state;
+        } else {
+            syn::visit_mut::visit_item_mod_mut(self, module);
+        }
+    }
+
+    fn visit_item_impl_mut(&mut self, item: &mut ItemImpl) {
+        if self.in_builder_module {
+            // Process all methods in impl blocks within the builder module
+            for impl_item in &mut item.items {
+                if let syn::ImplItem::Fn(method) = impl_item {
+                    // Check if this is a send method
+                    if method.sig.ident == "send" {
+                        // Add the tracing attribute if it's not already there
+                        let has_instrument = method.attrs.iter().any(|attr| {
+                            attr.path().segments.len() == 2
+                                && attr.path().segments[0].ident == "tracing"
+                                && attr.path().segments[1].ident == "instrument"
+                        });
+
+                        if !has_instrument {
+                            let instrument_attr: syn::Attribute = parse_quote! {
+                                #[tracing::instrument(skip_all)]
+                            };
+                            method.attrs.push(instrument_attr);
+                        }
                     }
                 }
             }
