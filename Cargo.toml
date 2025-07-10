@@ -9,7 +9,7 @@ repository = "https://github.com/flashnetxyz/sparkscan-rs.git"
 homepage = "https://github.com/flashnetxyz/sparkscan-rs"
 
 [features]
-default = ["tracing"]
+default = []
 tracing = ["dep:tracing", "dep:reqwest-tracing", "dep:reqwest-middleware"]
 
 [dependencies]
