@@ -7,7 +7,7 @@ cfg_if::cfg_if! {
 }
 
 fn main() {
-    let src = "./sparkscan.json";
+    let src = "../../sparkscan.json";
     println!("cargo:rerun-if-changed={}", src);
 
     let file = std::fs::File::open(src).unwrap();
