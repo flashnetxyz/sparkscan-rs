@@ -4,7 +4,7 @@ version = "0.1.0"
 edition = "2021"
 license = "MPL-2.0"
 repository = "https://github.com/flashnetxyz/sparkscan-rs.git"
-description = "A Rust client for the SparkScan API"
+description = "A Rust client for the SparkScan API (based on progenitor-client and adjusted for reqwest-middleware)"
 
 [features]
 default = []
