@@ -20,6 +20,9 @@ fn main() {
     let tokens = generator.generate_tokens(&spec).unwrap();
     let mut ast = syn::parse2(tokens).unwrap();
 
+    let mut import_modifier = ImportModifier::new();
+    import_modifier.visit_file_mut(&mut ast);
+
     let mut headers_modifier = ClientHeadersModifier::new();
     headers_modifier.visit_file_mut(&mut ast);
 
@@ -35,6 +38,50 @@ fn main() {
     let content = prettyplease::unparse(&ast);
     let out_file = std::path::Path::new(&std::env::var("OUT_DIR").unwrap()).join("codegen.rs");
     std::fs::write(out_file, content).unwrap();
+}
+
+struct ImportModifier {
+    modified: bool,
+}
+
+impl ImportModifier {
+    fn new() -> Self {
+        Self { modified: false }
+    }
+}
+
+impl syn::visit_mut::VisitMut for ImportModifier {
+    fn visit_use_tree_mut(&mut self, node: &mut syn::UseTree) {
+        match node {
+            syn::UseTree::Path(path) => {
+                // Check if this is a progenitor_client import
+                if path.ident == "progenitor_client" {
+                    // Replace with sparkscan_client
+                    path.ident = syn::Ident::new("sparkscan_client", path.ident.span());
+                    self.modified = true;
+                }
+                // Continue visiting the tree
+                self.visit_use_tree_mut(&mut path.tree);
+            }
+            _ => {
+                // For other use tree types, continue visiting
+                syn::visit_mut::visit_use_tree_mut(self, node);
+            }
+        }
+    }
+
+    fn visit_path_mut(&mut self, path: &mut syn::Path) {
+        // Handle fully qualified paths like progenitor_client::QueryParam
+        if path.leading_colon.is_none() && !path.segments.is_empty() {
+            if path.segments[0].ident == "progenitor_client" {
+                path.segments[0].ident = syn::Ident::new("sparkscan_client", path.segments[0].ident.span());
+                self.modified = true;
+            }
+        }
+
+        // Continue visiting the rest of the path
+        syn::visit_mut::visit_path_mut(self, path);
+    }
 }
 
 struct ClientHeadersModifier {
