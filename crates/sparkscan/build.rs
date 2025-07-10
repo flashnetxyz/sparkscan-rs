@@ -74,7 +74,8 @@ impl syn::visit_mut::VisitMut for ImportModifier {
         // Handle fully qualified paths like progenitor_client::QueryParam
         if path.leading_colon.is_none() && !path.segments.is_empty() {
             if path.segments[0].ident == "progenitor_client" {
-                path.segments[0].ident = syn::Ident::new("sparkscan_client", path.segments[0].ident.span());
+                path.segments[0].ident =
+                    syn::Ident::new("sparkscan_client", path.segments[0].ident.span());
                 self.modified = true;
             }
         }
@@ -223,9 +224,10 @@ impl syn::visit_mut::VisitMut for ClientTracingModifier {
             for impl_item in &mut item.items {
                 if let syn::ImplItem::Fn(method) = impl_item {
                     if method.sig.ident == "client" {
-                        method.block = parse_quote! {{
-                            unimplemented!("client() method is not supported when using middleware")
-                        }};
+                        // Change the return type to ClientWithMiddleware
+                        method.sig.output = parse_quote! {
+                            -> &reqwest_middleware::ClientWithMiddleware
+                        };
                     }
                 }
             }

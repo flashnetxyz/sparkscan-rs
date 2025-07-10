@@ -7,4 +7,10 @@ members = [
 resolver = "2"
 
 [workspace.dependencies]
-sparkscan-client = { version = "0.0.1", path = "crates/sparkscan-client" }
+sparkscan-client = { version = "0.1.0", path = "crates/sparkscan-client" }
+
+# HTTP
+reqwest-middleware = { version = "0.4.2", features = ["json"] }
+
+# Misc
+cfg-if = { version = "1.0.1" }

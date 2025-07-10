@@ -59,8 +59,15 @@ pub trait ClientInfo<Inner> {
     /// Get the base URL to which requests are made.
     fn baseurl(&self) -> &str;
 
-    /// Get the internal `reqwest::Client` used to make requests.
-    fn client(&self) -> &reqwest::Client;
+    cfg_if::cfg_if! {
+        if #[cfg(feature = "middleware")] {
+            /// Get the internal `reqwest_middleware::ClientWithMiddleware` used to make requests.
+            fn client(&self) -> &reqwest_middleware::ClientWithMiddleware;
+        } else {
+            /// Get the internal `reqwest::Client` used to make requests.
+            fn client(&self) -> &reqwest::Client;
+        }
+    }
 
     /// Get the inner value of type `T` if one is specified.
     fn inner(&self) -> &Inner;
@@ -78,8 +85,16 @@ where
         (*self).baseurl()
     }
 
-    fn client(&self) -> &reqwest::Client {
-        (*self).client()
+    cfg_if::cfg_if! {
+        if #[cfg(feature = "middleware")] {
+            fn client(&self) -> &reqwest_middleware::ClientWithMiddleware {
+                (*self).client()
+            }
+        } else {
+            fn client(&self) -> &reqwest::Client {
+                (*self).client()
+            }
+        }
     }
 
     fn inner(&self) -> &Inner {
@@ -121,33 +136,31 @@ where
         Ok(())
     }
 
-    /// Execute the request. Note that for almost any reasonable implementation
-    /// this will include code equivalent to this:
-    /// ```
-    /// # use progenitor_client::{ClientHooks, ClientInfo, OperationInfo};
-    /// # struct X;
-    /// # impl ClientInfo<()> for X {
-    /// #   fn api_version() -> &'static str { panic!() }
-    /// #   fn baseurl(&self) -> &str { panic!() }
-    /// #   fn client(&self) -> &reqwest::Client { panic!() }
-    /// #   fn inner(&self) -> &() { panic!() }
-    /// # }
-    /// # impl ClientHooks for X {
-    /// #   async fn exec(
-    /// #       &self,
-    /// #       request: reqwest::Request,
-    /// #       info: &OperationInfo,
-    /// #   ) -> reqwest::Result<reqwest::Response> {
-    ///         self.client().execute(request).await
-    /// #   }
-    /// # }
-    /// ```
+    /// Execute the request.
     async fn exec(
         &self,
         request: reqwest::Request,
         info: &OperationInfo,
     ) -> reqwest::Result<reqwest::Response> {
-        self.client().execute(request).await
+        cfg_if::cfg_if! {
+            if #[cfg(feature = "middleware")] {
+                match self.client().execute(request).await {
+                    Ok(response) => Ok(response),
+                    Err(reqwest_middleware::Error::Reqwest(req_err)) => Err(req_err),
+                    // TODO: Simplifiy
+                    Err(reqwest_middleware::Error::Middleware(_err)) => {
+                        // Convert middleware error to a reqwest error by attempting a request that will fail
+                        let client = reqwest::Client::new();
+                        match client.get("http://127.0.0.1:0").send().await {
+                            Err(e) => Err(e),
+                            Ok(_) => unreachable!(),
+                        }
+                    }
+                }
+            } else {
+                self.client().execute(request).await
+            }
+        }
     }
 }
 

@@ -1359,7 +1359,6 @@ dependencies = [
  "futures",
  "prettyplease",
  "progenitor",
- "progenitor-client",
  "regress",
  "reqwest",
  "reqwest-middleware",
@@ -1373,12 +1372,14 @@ dependencies = [
 
 [[package]]
 name = "sparkscan-client"
-version = "0.0.1"
+version = "0.1.0"
 dependencies = [
  "bytes",
+ "cfg-if",
  "futures-core",
  "percent-encoding",
  "reqwest",
+ "reqwest-middleware",
  "serde",
  "serde_json",
  "serde_urlencoded",
