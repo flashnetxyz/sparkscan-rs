@@ -1,0 +1,67 @@
+[workspace]
+allow_dirty = true
+publish = true
+semver_check = true
+dependencies_update = false
+changelog_update = true
+git_release_enable = true
+git_tag_enable = true
+publish_timeout = "10m"
+
+[[package]]
+name = "sparkscan"
+changelog_path = "crates/sparkscan/CHANGELOG.md"
+git_tag_name = "sparkscan_v{{version}}"
+
+[[package]]
+name = "sparkscan-client"
+changelog_path = "crates/sparkscan-client/CHANGELOG.md"
+git_tag_name = "sparkscan-client_v{{version}}"
+
+
+[changelog]
+protect_breaking_commits = true
+sort_commits = "newest"
+
+header = """# Changelog
+
+All notable changes to this project will be documented in this file.
+
+The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
+and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+## [Unreleased]
+"""
+
+body = """
+
+## [{{ version }}]\
+    {%- if release_link -%}\
+        ({{ release_link }})\
+    {% endif %} \
+    - {{ timestamp | date(format="%Y-%m-%d") }}
+{% for group, commits in commits | group_by(attribute="group") %}
+### {{ group | upper_first }}
+
+    {% for commit in commits %}
+        {%- if commit.scope -%}
+            - *({{commit.scope}})* {% if commit.breaking %}[**breaking**] {% endif %}\
+                {{ commit.message }}\
+                {%- if commit.links %} \
+                    ({% for link in commit.links %}[{{link.text}}]({{link.href}}) {% endfor -%})\
+                {% endif %}
+        {% else -%}
+            - {% if commit.breaking %}[**breaking**] {% endif %}{{ commit.message }}
+        {% endif -%}
+    {% endfor -%}
+{% endfor %}
+"""
+
+commit_parsers = [
+  { message = "^feat", group = "added" },
+  { message = "^changed", group = "changed" },
+  { message = "^deprecated", group = "deprecated" },
+  { message = "^fix", group = "fixed" },
+  { message = "^security", group = "security" },
+  { message = "^.*", group = "other" },
+]
