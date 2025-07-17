@@ -1,0 +1,13 @@
+[tools.committed]
+version = "1.1.7"
+backend = "aqua:crate-ci/committed"
+
+[tools.committed.checksums]
+"committed-v1.1.7-x86_64-apple-darwin.tar.gz" = "sha256:f811eeb337e2844c99f4e69f1c0f56a70279042ce6dcb82d41d30dd3fb27a74c"
+
+[tools.pre-commit]
+version = "4.2.0"
+backend = "aqua:pre-commit/pre-commit"
+
+[tools.pre-commit.checksums]
+"pre-commit-4.2.0.pyz" = "sha256:0d4d80fd598dd1f7c268569de49e7c7a692a3de6f7a97cf14ad4e6cce993bbdf"

@@ -1,0 +1,10 @@
+[tools]
+committed = "latest"
+pre-commit = "latest"
+
+[hooks]
+enter = "mise i && pre-commit install"
+
+[settings]
+experimental = true
+lockfile = true
