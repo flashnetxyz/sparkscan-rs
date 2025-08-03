@@ -78,10 +78,10 @@ impl SparkScanWsConfig {
     }
 }
 
-/// The main SparkScan WebSocket client.
+/// WebSocket client for SparkScan API connectivity.
 /// 
-/// This client provides a high-level interface for connecting to SparkScan's
-/// WebSocket API and subscribing to typed message streams.
+/// Provides connection management and subscription creation for typed
+/// message streams over WebSocket transport.
 /// 
 /// # Example
 /// 
@@ -93,28 +93,28 @@ impl SparkScanWsConfig {
 ///     let config = SparkScanWsConfig::new("ws://localhost:8000/connection/websocket");
 ///     let client = SparkScanWsClient::with_config(config);
 /// 
-///     // Set up connection callbacks
+///     // Configure connection event handlers
 ///     client.on_connected(|| {
-///         println!("Connected to SparkScan WebSocket!");
+///         println!("WebSocket connection established");
 ///     });
 /// 
 ///     client.on_disconnected(|| {
-///         println!("Disconnected from SparkScan WebSocket");
+///         println!("WebSocket connection terminated");
 ///     });
 /// 
-///     // Connect to the WebSocket
+///     // Establish connection
 ///     client.connect().await?;
 /// 
-///     // Subscribe to balance updates
+///     // Create subscription for balance messages
 ///     let subscription = client.subscribe(Topic::Balances).await?;
 ///     subscription.on_message(|message| {
 ///         if let SparkScanMessage::Balance(balance) = message {
-///             println!("Balance update: {} sats", balance.soft_balance);
+///             println!("Balance: {} sats", balance.soft_balance);
 ///         }
 ///     });
 ///     subscription.subscribe();
 /// 
-///     // Keep the client running
+///     // Block until interrupted
 ///     tokio::signal::ctrl_c().await?;
 ///     Ok(())
 /// }
@@ -127,15 +127,15 @@ pub struct SparkScanWsClient {
 }
 
 impl SparkScanWsClient {
-    /// Create a new SparkScan WebSocket client with the specified URL.
+    /// Create WebSocket client with specified URL.
     /// 
-    /// Uses default configuration settings.
+    /// Uses default configuration parameters.
     pub fn new<S: Into<String>>(url: S) -> Self {
         let config = SparkScanWsConfig::new(url);
         Self::with_config(config)
     }
 
-    /// Create a new SparkScan WebSocket client with custom configuration.
+    /// Create WebSocket client with custom configuration.
     pub fn with_config(config: SparkScanWsConfig) -> Self {
         let centrifuge_config = if config.use_protobuf {
             Config::new().use_protobuf()
@@ -156,14 +156,14 @@ impl SparkScanWsClient {
         &self.config
     }
 
-    /// Set a callback for when the client is connecting.
+    /// Register callback for connection initiation events.
     /// 
     /// # Example
     /// ```rust,no_run
     /// # use sparkscan_ws::SparkScanWsClient;
     /// let client = SparkScanWsClient::new("ws://localhost:8000/connection/websocket");
     /// client.on_connecting(|| {
-    ///     println!("Connecting to SparkScan...");
+    ///     println!("Initiating connection...");
     /// });
     /// ```
     pub fn on_connecting<F>(&self, callback: F)
@@ -173,7 +173,7 @@ impl SparkScanWsClient {
         self.inner.on_connecting(callback);
     }
 
-    /// Set a callback for when the client successfully connects.
+    /// Register callback for successful connection events.
     pub fn on_connected<F>(&self, callback: F)
     where
         F: Fn() + Send + Sync + 'static,
@@ -181,7 +181,7 @@ impl SparkScanWsClient {
         self.inner.on_connected(callback);
     }
 
-    /// Set a callback for when the client disconnects.
+    /// Register callback for disconnection events.
     pub fn on_disconnected<F>(&self, callback: F)
     where
         F: Fn() + Send + Sync + 'static,
@@ -189,14 +189,14 @@ impl SparkScanWsClient {
         self.inner.on_disconnected(callback);
     }
 
-    /// Set a callback for connection errors.
+    /// Register callback for connection error events.
     /// 
     /// # Example
     /// ```rust,no_run
     /// # use sparkscan_ws::SparkScanWsClient;
     /// let client = SparkScanWsClient::new("ws://localhost:8000/connection/websocket");
     /// client.on_error(|error| {
-    ///     eprintln!("WebSocket error: {:?}", error);
+    ///     eprintln!("Connection error: {:?}", error);
     /// });
     /// ```
     pub fn on_error<F>(&self, callback: F)
@@ -208,14 +208,14 @@ impl SparkScanWsClient {
         });
     }
 
-    /// Connect to the SparkScan WebSocket server.
+    /// Initiate WebSocket connection to server.
     /// 
-    /// This method initiates the connection but returns immediately.
-    /// Use the connection callbacks to know when the connection is established.
+    /// Returns immediately after initiating connection process.
+    /// Use connection callbacks to monitor connection state.
     /// 
     /// # Errors
     /// 
-    /// Returns an error if the connection cannot be initiated.
+    /// Returns error if connection initiation fails.
     pub async fn connect(&self) -> Result<()> {
         self.inner.connect();
         // Wait a bit to allow connection to establish
@@ -223,22 +223,25 @@ impl SparkScanWsClient {
         Ok(())
     }
 
-    /// Disconnect from the SparkScan WebSocket server.
+    /// Terminate WebSocket connection.
+    /// 
+    /// # Note
+    /// 
+    /// This function is not currently supported by the underlying tokio-centrifuge crate
+    /// as it does not provide an explicit disconnect method. Connection terminates when client is dropped.
     pub async fn disconnect(&self) -> Result<()> {
-        // Note: tokio-centrifuge doesn't have an explicit disconnect method
-        // The connection will be dropped when the client is dropped
-        Ok(())
+        todo!("Explicit disconnect not supported by tokio-centrifuge")
     }
 
-    /// Create a subscription to the specified topic.
+    /// Create subscription for specified topic.
     /// 
     /// # Arguments
     /// 
-    /// * `topic` - The topic to subscribe to
+    /// * `topic` - Topic to subscribe to
     /// 
     /// # Returns
     /// 
-    /// A `SparkScanSubscription` that can be used to receive typed messages.
+    /// Subscription handle for receiving typed messages.
     /// 
     /// # Example
     /// 
@@ -247,15 +250,15 @@ impl SparkScanWsClient {
     /// # async fn example() -> Result<(), Box<dyn std::error::Error>> {
     /// let client = SparkScanWsClient::new("ws://localhost:8000/connection/websocket");
     /// 
-    /// // Subscribe to all balance updates
+    /// // Global balance updates
     /// let balances = client.subscribe(Topic::Balances).await?;
     /// 
-    /// // Subscribe to balance updates for a specific address
+    /// // Address-specific balance updates
     /// let address_balance = client.subscribe(
     ///     Topic::AddressBalance("sp1abc123...".to_string())
     /// ).await?;
     /// 
-    /// // Subscribe to token price updates
+    /// // Token price feed
     /// let token_prices = client.subscribe(Topic::TokenPrices).await?;
     /// # Ok(())
     /// # }
@@ -267,25 +270,24 @@ impl SparkScanWsClient {
         Ok(SparkScanSubscription::new(centrifuge_subscription, topic))
     }
 
-    /// Check if the client is currently connected.
+    /// Check current connection status.
     /// 
-    /// Note: This is a best-effort check and may not reflect the exact
-    /// connection state due to the async nature of WebSocket connections.
+    /// # Note
+    /// 
+    /// This function is not currently supported by the underlying tokio-centrifuge crate
+    /// as it does not expose connection state information.
     pub fn is_connected(&self) -> bool {
-        // tokio-centrifuge doesn't expose connection state directly
-        // This would need to be tracked internally if precise state is needed
-        true // Placeholder implementation
+        todo!("Connection state tracking not supported by tokio-centrifuge")
     }
 
     /// Get connection statistics.
     /// 
-    /// Returns information about the current connection if available.
+    /// # Note
+    /// 
+    /// This function is not currently supported by the underlying tokio-centrifuge crate
+    /// as it does not expose connection statistics or state tracking.
     pub fn connection_stats(&self) -> ConnectionStats {
-        ConnectionStats {
-            connected: self.is_connected(),
-            reconnect_attempts: 0, // Would need to track this internally
-            last_error: None,
-        }
+        todo!("Connection statistics not supported by tokio-centrifuge")
     }
 }
 

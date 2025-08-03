@@ -1,18 +1,17 @@
 //! # SparkScan WebSocket SDK
 //! 
-//! A high-level, type-safe WebSocket client for the SparkScan API.
+//! Type-safe WebSocket client implementation for SparkScan API integration.
 //! 
-//! This crate provides a WebSocket client that automatically handles message
-//! deserialization using types generated from JSON schemas. It's built on top
-//! of `tokio-centrifuge` for reliable WebSocket connectivity.
+//! Provides automatic JSON schema-based message deserialization and topic-based
+//! subscription management built on tokio-centrifuge.
 //! 
 //! ## Features
 //! 
-//! - **Type Safety**: Messages are automatically parsed into strongly-typed Rust structs
-//! - **Topic-based Subscriptions**: Subscribe to specific data streams (balances, transactions, etc.)
-//! - **Automatic Reconnection**: Built-in reconnection logic for robust connectivity
-//! - **Async/Await Support**: Full async/await support using Tokio
-//! - **Flexible Configuration**: Customizable connection settings and behavior
+//! - Type-safe message parsing from JSON schemas
+//! - Topic-based subscription routing
+//! - Configurable reconnection handling
+//! - Async runtime compatibility
+//! - Error propagation and handling
 //! 
 //! ## Quick Start
 //! 
@@ -24,56 +23,56 @@
 //!     // Create a client
 //!     let client = SparkScanWsClient::new("ws://localhost:8000/connection/websocket");
 //! 
-//!     // Set up connection callbacks
-//!     client.on_connected(|| println!("Connected!"));
-//!     client.on_error(|err| eprintln!("Error: {}", err));
+//!     // Register connection event handlers
+//!     client.on_connected(|| println!("WebSocket connected"));
+//!     client.on_error(|err| eprintln!("Connection error: {}", err));
 //! 
-//!     // Connect
+//!     // Establish connection
 //!     client.connect().await?;
 //! 
-//!     // Subscribe to balance updates
+//!     // Create subscription for balance topic
 //!     let subscription = client.subscribe(Topic::Balances).await?;
 //!     subscription.on_message(|message| {
 //!         match message {
 //!             SparkScanMessage::Balance(balance) => {
-//!                 println!("Balance: {} sats for address {}", 
+//!                 println!("Balance update: {} sats for {}", 
 //!                          balance.soft_balance, balance.address);
 //!             }
-//!             _ => println!("Received other message type"),
+//!             _ => println!("Unexpected message type received"),
 //!         }
 //!     });
 //!     subscription.subscribe();
 //! 
-//!     // Keep running
+//!     // Run until interrupted
 //!     tokio::signal::ctrl_c().await?;
 //!     Ok(())
 //! }
 //! ```
 //! 
-//! ## Available Topics
+//! ## Topic Types
 //! 
-//! The SDK supports subscribing to various data streams:
+//! Available subscription topics:
 //! 
-//! - **Balances**: Account balance updates (`Topic::Balances`)
-//! - **Token Balances**: Token-specific balance updates (`Topic::TokenBalances`)  
-//! - **Token Prices**: Token price updates (`Topic::TokenPrices`)
-//! - **Tokens**: Token metadata updates (`Topic::Tokens`)
-//! - **Transactions**: Transaction updates (`Topic::Transactions`)
+//! - `Topic::Balances` - Account balance updates
+//! - `Topic::TokenBalances` - Token balance updates  
+//! - `Topic::TokenPrices` - Token price feeds
+//! - `Topic::Tokens` - Token metadata updates
+//! - `Topic::Transactions` - Transaction updates
 //! 
-//! You can also subscribe to filtered streams for specific addresses or tokens:
+//! Filtered subscriptions for specific identifiers:
 //! 
 //! ```rust,no_run
 //! # use sparkscan_ws::Topic;
-//! // Balance updates for a specific address
+//! // Address-specific balance subscription
 //! let topic = Topic::AddressBalance("sp1abc123...".to_string());
 //! 
-//! // Token price updates for a specific token
+//! // Token-specific price subscription
 //! let topic = Topic::TokenPrice("btkn1def456...".to_string());
 //! ```
 //! 
-//! ## Message Types
+//! ## Message Processing
 //! 
-//! All messages are parsed into the `SparkScanMessage` enum:
+//! Messages are deserialized into typed enum variants:
 //! 
 //! ```rust,no_run
 //! use sparkscan_ws::SparkScanMessage;
@@ -81,31 +80,30 @@
 //! fn handle_message(message: SparkScanMessage) {
 //!     match message {
 //!         SparkScanMessage::Balance(balance) => {
-//!             // Handle balance update
+//!             // Process balance update
 //!             println!("Address: {}", balance.address);
 //!             println!("Balance: {} sats", balance.soft_balance);
 //!         }
 //!         SparkScanMessage::Transaction(tx) => {
-//!             // Handle transaction update  
-//!             println!("Transaction: {}", tx.id);
+//!             // Process transaction update  
+//!             println!("Transaction ID: {}", tx.id);
 //!             if let Some(amount) = &tx.amount_sats {
 //!                 println!("Amount: {} sats", amount);
 //!             }
 //!         }
 //!         SparkScanMessage::TokenPrice(price) => {
-//!             // Handle token price update
+//!             // Process price update
 //!             println!("Token: {}", price.address);
 //!             println!("Price: {:?} sats", price.price_sats);
 //!         }
-//!         // ... other message types
-//!         _ => {}
+//!         _ => {} // Handle other message types
 //!     }
 //! }
 //! ```
 //! 
-//! ## Error Handling
+//! ## Error Types
 //! 
-//! The SDK provides comprehensive error handling through the `SparkScanWsError` type:
+//! Error handling through structured error types:
 //! 
 //! ```rust,no_run
 //! use sparkscan_ws::{SparkScanWsClient, SparkScanWsError, Result};
@@ -114,30 +112,30 @@
 //!     let client = SparkScanWsClient::new("ws://updates.sparkscan.io");
 //!     
 //!     match client.connect().await {
-//!         Ok(_) => println!("Connected successfully"),
+//!         Ok(_) => println!("Connection established"),
 //!         Err(SparkScanWsError::ConnectionError(msg)) => {
-//!             eprintln!("Failed to connect: {}", msg);
+//!             eprintln!("Connection failed: {}", msg);
 //!         }
-//!         Err(e) => eprintln!("Other error: {}", e),
+//!         Err(e) => eprintln!("Error: {}", e),
 //!     }
 //!     
 //!     Ok(())
 //! }
 //! ```
 //! 
-//! ## Configuration
+//! ## Client Configuration
 //! 
-//! Customize client behavior using `SparkScanWsConfig`:
+//! Configure client connection parameters:
 //! 
 //! ```rust,no_run
 //! use sparkscan_ws::{SparkScanWsClient, SparkScanWsConfig};
 //! 
 //! let config = SparkScanWsConfig::new("ws://updates.sparkscan.io")
-//!     .with_protobuf(true)              // Use protobuf format
-//!     .with_timeout(60)                 // 60 second timeout
-//!     .with_auto_reconnect(true)        // Enable auto-reconnection
-//!     .with_max_reconnect_attempts(10)  // Max 10 reconnect attempts
-//!     .with_reconnect_delay(2000);      // 2 second delay between attempts
+//!     .with_protobuf(true)              // Enable protobuf message format
+//!     .with_timeout(60)                 // Set connection timeout (seconds)
+//!     .with_auto_reconnect(true)        // Enable automatic reconnection
+//!     .with_max_reconnect_attempts(10)  // Limit reconnection attempts
+//!     .with_reconnect_delay(2000);      // Delay between attempts (ms)
 //! 
 //! let client = SparkScanWsClient::with_config(config);
 //! ```
@@ -179,14 +177,14 @@ pub const DEFAULT_MAINNET_URL: &str = "wss://ws.sparkscan.io/connection/websocke
 /// Default WebSocket URL for SparkScan regtest.
 pub const DEFAULT_REGTEST_URL: &str = "wss://regtest-ws.sparkscan.io/connection/websocket";
 
-/// Prelude module containing the most commonly used types.
+/// Prelude module for convenient type imports.
 /// 
-/// This module is designed to be glob-imported for convenience:
+/// Provides glob import access to commonly used types:
 /// 
 /// ```rust,no_run
 /// use sparkscan_ws::prelude::*;
 /// 
-/// // Now you can use the main types directly
+/// // All primary types available
 /// let client = SparkScanWsClient::new("ws://localhost:8000");
 /// let topic = Topic::Balances;
 /// ```

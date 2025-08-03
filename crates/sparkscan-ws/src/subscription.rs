@@ -7,10 +7,10 @@ use crate::{
     types::{SparkScanMessage, Topic, parse_message_for_topic},
 };
 
-/// A typed WebSocket subscription for SparkScan messages.
+/// Typed WebSocket subscription handler.
 /// 
-/// This wrapper provides type-safe message handling on top of tokio-centrifuge
-/// subscriptions, automatically deserializing messages based on the topic type.
+/// Wraps tokio-centrifuge subscription with type-safe message deserialization
+/// based on topic-specific message types.
 pub struct SparkScanSubscription {
     /// The underlying centrifuge subscription
     inner: Subscription,
@@ -19,9 +19,9 @@ pub struct SparkScanSubscription {
 }
 
 impl SparkScanSubscription {
-    /// Create a new SparkScan subscription.
+    /// Create new typed subscription.
     /// 
-    /// This is typically called internally by the SparkScan client.
+    /// Typically called internally by client.
     pub fn new(inner: Subscription, topic: Topic) -> Self {
         Self { inner, topic }
     }
@@ -31,7 +31,7 @@ impl SparkScanSubscription {
         &self.topic
     }
 
-    /// Set a callback for when the subscription becomes subscribed.
+    /// Register callback for subscription establishment.
     /// 
     /// # Example
     /// ```rust,no_run
@@ -41,7 +41,7 @@ impl SparkScanSubscription {
     /// let subscription = client.subscribe(Topic::Balances).await?;
     /// 
     /// subscription.on_subscribed(|| {
-    ///     println!("Successfully subscribed to balances!");
+    ///     println!("Subscription active");
     /// });
     /// # Ok(())
     /// # }
@@ -53,7 +53,7 @@ impl SparkScanSubscription {
         self.inner.on_subscribed(callback);
     }
 
-    /// Set a callback for when the subscription becomes unsubscribed.
+    /// Register callback for subscription termination.
     pub fn on_unsubscribed<F>(&self, callback: F)
     where
         F: Fn() + Send + Sync + 'static,
@@ -61,7 +61,7 @@ impl SparkScanSubscription {
         self.inner.on_unsubscribed(callback);
     }
 
-    /// Set a callback for when the subscription is in subscribing state.
+    /// Register callback for subscription initiation.
     pub fn on_subscribing<F>(&self, callback: F)
     where
         F: Fn() + Send + Sync + 'static,
@@ -69,11 +69,10 @@ impl SparkScanSubscription {
         self.inner.on_subscribing(callback);
     }
 
-    /// Set a callback for receiving typed messages.
+    /// Register callback for typed message handling.
     /// 
-    /// This is the main method for handling incoming SparkScan messages.
-    /// The callback receives a parsed `SparkScanMessage` enum that contains
-    /// the appropriate typed payload based on the subscription topic.
+    /// Primary method for processing incoming messages. Callback receives
+    /// parsed SparkScanMessage enum with topic-appropriate payload.
     /// 
     /// # Example
     /// ```rust,no_run
@@ -85,10 +84,10 @@ impl SparkScanSubscription {
     /// subscription.on_message(|message| {
     ///     match message {
     ///         SparkScanMessage::Balance(balance) => {
-    ///             println!("Received balance update: {} sats", balance.soft_balance);
+    ///             println!("Balance update: {} sats", balance.soft_balance);
     ///         }
     ///         _ => {
-    ///             println!("Received unexpected message type");
+    ///             println!("Unexpected message type");
     ///         }
     ///     }
     /// });
@@ -121,10 +120,9 @@ impl SparkScanSubscription {
         });
     }
 
-    /// Set a callback for receiving raw publication data.
+    /// Register callback for raw message data.
     /// 
-    /// This provides access to the raw bytes if you need to handle
-    /// deserialization manually or for debugging purposes.
+    /// Provides access to raw bytes for manual deserialization or debugging.
     pub fn on_raw_publication<F>(&self, callback: F)
     where
         F: Fn(&[u8]) + Send + Sync + 'static,
@@ -134,7 +132,7 @@ impl SparkScanSubscription {
         });
     }
 
-    /// Set a callback for subscription errors.
+    /// Register callback for subscription errors.
     pub fn on_error<F>(&self, callback: F)
     where
         F: Fn(String) + Send + Sync + 'static,
@@ -144,99 +142,100 @@ impl SparkScanSubscription {
         });
     }
 
-    /// Start the subscription.
+    /// Activate subscription to begin receiving messages.
     /// 
-    /// This must be called to begin receiving messages.
+    /// Must be called to start message delivery.
     pub fn subscribe(&self) {
         self.inner.subscribe();
     }
 
-    /// Stop the subscription.
+    /// Deactivate subscription.
     pub fn unsubscribe(&self) {
         self.inner.unsubscribe();
     }
 
-    /// Publish a message to this subscription's topic.
+    /// Publish message to subscription topic.
     /// 
-    /// Note: This requires the WebSocket server to support publishing
-    /// from clients, which may not be available in all configurations.
+    /// Note: Requires server support for client publishing.
     pub fn publish(&self, message: &SparkScanMessage) -> Result<()> {
         let data = serde_json::to_vec(message)?;
         self.inner.publish(data);
         Ok(())
     }
 
-    /// Publish raw data to this subscription's topic.
+    /// Publish raw data to subscription topic.
     pub fn publish_raw(&self, data: Vec<u8>) {
         self.inner.publish(data);
     }
 
-    /// Check if the subscription is currently subscribed.
+    /// Check subscription activation status.
+    /// 
+    /// # Note
+    /// 
+    /// This function is not currently supported by the underlying tokio-centrifuge crate
+    /// as it does not expose subscription state information.
     pub fn is_subscribed(&self) -> bool {
-        // Note: tokio-centrifuge doesn't expose subscription state directly
-        // This would need to be tracked internally if needed
-        true // Placeholder implementation
+        todo!("Subscription state tracking not supported by tokio-centrifuge")
     }
 }
 
-/// A collection of subscriptions for easier management.
+/// Subscription collection manager.
 /// 
-/// This allows you to manage multiple subscriptions together and provides
-/// convenience methods for bulk operations.
+/// Manages multiple subscriptions with bulk operation support.
 #[derive(Default)]
 pub struct SubscriptionManager {
     subscriptions: std::collections::HashMap<String, SparkScanSubscription>,
 }
 
 impl SubscriptionManager {
-    /// Create a new subscription manager.
+    /// Create new subscription manager.
     pub fn new() -> Self {
         Self {
             subscriptions: std::collections::HashMap::new(),
         }
     }
 
-    /// Add a subscription to the manager.
+    /// Add subscription to manager.
     pub fn add(&mut self, subscription: SparkScanSubscription) {
         let topic_str = subscription.topic().as_str();
         self.subscriptions.insert(topic_str, subscription);
     }
 
-    /// Get a subscription by topic string.
+    /// Get subscription by topic string.
     pub fn get(&self, topic: &str) -> Option<&SparkScanSubscription> {
         self.subscriptions.get(topic)
     }
 
-    /// Remove a subscription by topic string.
+    /// Remove subscription by topic string.
     pub fn remove(&mut self, topic: &str) -> Option<SparkScanSubscription> {
         self.subscriptions.remove(topic)
     }
 
-    /// Get all active subscriptions.
+    /// Get all managed subscriptions.
     pub fn subscriptions(&self) -> &std::collections::HashMap<String, SparkScanSubscription> {
         &self.subscriptions
     }
 
-    /// Subscribe to all managed subscriptions.
+    /// Activate all managed subscriptions.
     pub fn subscribe_all(&self) {
         for subscription in self.subscriptions.values() {
             subscription.subscribe();
         }
     }
 
-    /// Unsubscribe from all managed subscriptions.
+    /// Deactivate all managed subscriptions.
     pub fn unsubscribe_all(&self) {
         for subscription in self.subscriptions.values() {
             subscription.unsubscribe();
         }
     }
 
-    /// Get the count of managed subscriptions.
+    /// Get count of managed subscriptions.
     pub fn len(&self) -> usize {
         self.subscriptions.len()
     }
 
-    /// Check if the manager has no subscriptions.
+    /// Check if manager contains no subscriptions.
     pub fn is_empty(&self) -> bool {
         self.subscriptions.is_empty()
     }

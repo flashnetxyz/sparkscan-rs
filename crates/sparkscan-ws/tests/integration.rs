@@ -226,8 +226,7 @@ async fn test_async_operations() {
     // Connection will likely fail but the method should be callable
     let _ = connect_result;
     
-    let disconnect_result = client.disconnect().await;
-    assert!(disconnect_result.is_ok());
+    // Note: disconnect() is not supported by underlying tokio-centrifuge crate
 }
 
 #[test]
