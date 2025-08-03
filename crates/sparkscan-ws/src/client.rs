@@ -267,18 +267,6 @@ impl SparkScanWsClient {
         Ok(SparkScanSubscription::new(centrifuge_subscription, topic))
     }
 
-    /// Create a subscription to a custom topic string.
-    /// 
-    /// This is useful for subscribing to topics that don't fit the predefined
-    /// `Topic` enum variants.
-    pub async fn subscribe_to_custom<S: Into<String>>(&self, topic: S) -> Result<SparkScanSubscription> {
-        let topic_string = topic.into();
-        let topic = Topic::Custom(topic_string.clone());
-        let centrifuge_subscription = self.inner.new_subscription(&topic_string);
-        
-        Ok(SparkScanSubscription::new(centrifuge_subscription, topic))
-    }
-
     /// Check if the client is currently connected.
     /// 
     /// Note: This is a best-effort check and may not reflect the exact

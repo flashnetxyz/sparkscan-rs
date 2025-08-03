@@ -187,24 +187,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     address_balance_subscription.subscribe();
 
-    // Example 5: Subscribe to a custom topic
-    println!("\n🔧 Subscribing to custom topic...");
-    let custom_subscription = client.subscribe_to_custom("custom_events").await?;
-    
-    custom_subscription.on_subscribed(|| {
-        println!("✅ Subscribed to custom topic");
-    });
-
-    custom_subscription.on_raw_publication(|data| {
-        println!("🔧 Custom Topic Data: {} bytes received", data.len());
-        // You could parse this manually if needed
-        if let Ok(text) = std::str::from_utf8(data) {
-            println!("   Raw content: {}", text);
-        }
-    });
-
-    custom_subscription.subscribe();
-
     // Set up error handlers for subscriptions
     balance_subscription.on_error(|err| {
         eprintln!("💥 Balance subscription error: {}", err);
@@ -237,7 +219,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     token_price_subscription.unsubscribe();
     transaction_subscription.unsubscribe();
     address_balance_subscription.unsubscribe();
-    custom_subscription.unsubscribe();
 
     println!("✅ Shutdown complete!");
     Ok(())

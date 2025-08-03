@@ -54,7 +54,6 @@ fn test_topic_enum_completeness() {
         Topic::Token("btkn1test".to_string()),
         Topic::Transactions,
         Topic::AddressTransactions("sp1test".to_string()),
-        Topic::Custom("custom".to_string()),
     ];
 
     for topic in topics {
@@ -221,9 +220,6 @@ async fn test_async_operations() {
     // These operations should not panic even without a real connection
     let balance_subscription = client.subscribe(Topic::Balances).await;
     assert!(balance_subscription.is_ok());
-    
-    let custom_subscription = client.subscribe_to_custom("test_topic").await;
-    assert!(custom_subscription.is_ok());
     
     // Test connection operations (they won't succeed but shouldn't panic)
     let connect_result = client.connect().await;

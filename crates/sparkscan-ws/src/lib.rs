@@ -78,24 +78,28 @@
 //! ```rust,no_run
 //! use sparkscan_ws::SparkScanMessage;
 //! 
-//! match message {
-//!     SparkScanMessage::Balance(balance) => {
-//!         // Handle balance update
-//!         println!("Address: {}", balance.address);
-//!         println!("Balance: {} sats", balance.soft_balance);
+//! fn handle_message(message: SparkScanMessage) {
+//!     match message {
+//!         SparkScanMessage::Balance(balance) => {
+//!             // Handle balance update
+//!             println!("Address: {}", balance.address);
+//!             println!("Balance: {} sats", balance.soft_balance);
+//!         }
+//!         SparkScanMessage::Transaction(tx) => {
+//!             // Handle transaction update  
+//!             println!("Transaction: {}", tx.id);
+//!             if let Some(amount) = &tx.amount_sats {
+//!                 println!("Amount: {} sats", amount);
+//!             }
+//!         }
+//!         SparkScanMessage::TokenPrice(price) => {
+//!             // Handle token price update
+//!             println!("Token: {}", price.address);
+//!             println!("Price: {:?} sats", price.price_sats);
+//!         }
+//!         // ... other message types
+//!         _ => {}
 //!     }
-//!     SparkScanMessage::Transaction(tx) => {
-//!         // Handle transaction update  
-//!         println!("Transaction: {}", tx.id);
-//!         println!("Amount: {} sats", tx.amount_sats);
-//!     }
-//!     SparkScanMessage::TokenPrice(price) => {
-//!         // Handle token price update
-//!         println!("Token: {}", price.address);
-//!         println!("Price: {} sats", price.price_sats);
-//!     }
-//!     // ... other message types
-//!     _ => {}
 //! }
 //! ```
 //! 
@@ -104,7 +108,7 @@
 //! The SDK provides comprehensive error handling through the `SparkScanWsError` type:
 //! 
 //! ```rust,no_run
-//! use sparkscan_ws::{SparkScanWsError, Result};
+//! use sparkscan_ws::{SparkScanWsClient, SparkScanWsError, Result};
 //! 
 //! async fn handle_connection() -> Result<()> {
 //!     let client = SparkScanWsClient::new("ws://updates.sparkscan.io");

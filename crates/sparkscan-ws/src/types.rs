@@ -82,8 +82,6 @@ pub enum Topic {
     Transactions,
     /// Transaction updates for a specific address
     AddressTransactions(String),
-    /// Custom topic
-    Custom(String),
 }
 
 impl Topic {
@@ -101,7 +99,6 @@ impl Topic {
             Topic::Token(token) => format!("token:{}", token),
             Topic::Transactions => "transactions".to_string(),
             Topic::AddressTransactions(address) => format!("transactions:{}", address),
-            Topic::Custom(topic) => topic.clone(),
         }
     }
 
@@ -126,7 +123,7 @@ impl Topic {
                 "token_prices" => Topic::TokenPrices,
                 "tokens" => Topic::Tokens,
                 "transactions" => Topic::Transactions,
-                _ => Topic::Custom(topic.to_string()),
+                _ => panic!("Unknown topic: {}. Only predefined topics are supported.", topic),
             }
         }
     }
@@ -134,33 +131,56 @@ impl Topic {
 
 /// Helper function to try parsing a message based on expected topic type.
 pub fn parse_message_for_topic(topic: &Topic, data: &[u8]) -> crate::error::Result<SparkScanMessage> {
-    use crate::error::SparkScanWsError;
+    // Debug: Log the raw data structure to understand the WebSocket message format
+    #[cfg(feature = "tracing")]
+    {
+        if let Ok(raw_str) = std::str::from_utf8(data) {
+            tracing::debug!("Raw WebSocket data for topic {:?}: {}", topic, raw_str);
+        }
+    }
+
+    // First, try to parse as a JSON value
+    let json_value: serde_json::Value = serde_json::from_slice(data)?;
+    
+    // Handle the case where the data itself is a JSON string that needs to be parsed again
+    let payload_data = if json_value.is_string() {
+        // The entire data is a JSON string, parse it again
+        let json_str = json_value.as_str().unwrap();
+        serde_json::from_str(json_str)?
+    } else if let Some(data_field) = json_value.get("data") {
+        // Check if there's a "data" envelope field
+        if let Some(data_str) = data_field.as_str() {
+            // The data field is a JSON string, parse it again
+            serde_json::from_str(data_str)?
+        } else {
+            // The data field is already a JSON object
+            data_field.clone()
+        }
+    } else {
+        // Use the entire JSON value as-is
+        json_value
+    };
 
     match topic {
         Topic::Balances | Topic::AddressBalance(_) => {
-            let payload: BalancePayload = serde_json::from_slice(data)?;
+            let payload: BalancePayload = serde_json::from_value(payload_data)?;
             Ok(SparkScanMessage::Balance(payload))
         }
         Topic::TokenBalances | Topic::AddressTokenBalance(_) | Topic::TokenBalance(_) => {
-            let payload: TokenBalancePayload = serde_json::from_slice(data)?;
+            let payload: TokenBalancePayload = serde_json::from_value(payload_data)?;
             Ok(SparkScanMessage::TokenBalance(payload))
         }
         Topic::TokenPrices | Topic::TokenPrice(_) => {
-            let payload: TokenPricePayload = serde_json::from_slice(data)?;
+            let payload: TokenPricePayload = serde_json::from_value(payload_data)?;
             Ok(SparkScanMessage::TokenPrice(payload))
         }
         Topic::Tokens | Topic::Token(_) => {
-            let payload: TokenPayload = serde_json::from_slice(data)?;
+            let payload: TokenPayload = serde_json::from_value(payload_data)?;
             Ok(SparkScanMessage::Token(payload))
         }
         Topic::Transactions | Topic::AddressTransactions(_) => {
-            let payload: TransactionPayload = serde_json::from_slice(data)?;
+            let payload: TransactionPayload = serde_json::from_value(payload_data)?;
             Ok(SparkScanMessage::Transaction(payload))
-        }
-        Topic::Custom(_) => {
-            // For custom topics, try to parse as a generic SparkScanMessage
-            serde_json::from_slice(data)
-                .map_err(|e| SparkScanWsError::SerializationError(e))
         }
     }
 }
@@ -177,7 +197,6 @@ mod tests {
             Topic::AddressBalance("sp1abc123".to_string())
         );
         assert_eq!(Topic::from_str("token_balances"), Topic::TokenBalances);
-        assert_eq!(Topic::from_str("custom_topic"), Topic::Custom("custom_topic".to_string()));
     }
 
     #[test]
@@ -188,9 +207,5 @@ mod tests {
             "balances:sp1abc123"
         );
         assert_eq!(Topic::TokenBalances.as_str(), "token_balances");
-        assert_eq!(
-            Topic::Custom("custom".to_string()).as_str(),
-            "custom"
-        );
     }
 }

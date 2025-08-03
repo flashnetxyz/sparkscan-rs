@@ -36,7 +36,7 @@ impl SparkScanSubscription {
     /// # Example
     /// ```rust,no_run
     /// # use sparkscan_ws::*;
-    /// # async fn example() -> Result<(), Box<dyn std::error::Error>> {
+    /// # async fn example() -> Result<()> {
     /// # let client = SparkScanWsClient::new("ws://localhost:8000/connection/websocket");
     /// let subscription = client.subscribe(Topic::Balances).await?;
     /// 
@@ -78,7 +78,7 @@ impl SparkScanSubscription {
     /// # Example
     /// ```rust,no_run
     /// # use sparkscan_ws::*;
-    /// # async fn example() -> Result<(), Box<dyn std::error::Error>> {
+    /// # async fn example() -> Result<()> {
     /// # let client = SparkScanWsClient::new("ws://localhost:8000/connection/websocket");
     /// let subscription = client.subscribe(Topic::Balances).await?;
     /// 

@@ -45,9 +45,7 @@ mod tests {
         let topic = Topic::TokenPrice(token.to_string());
         assert_eq!(topic.as_str(), "token_price:btkn1def456");
 
-        // Test custom topics
-        let custom = Topic::Custom("custom_topic".to_string());
-        assert_eq!(custom.as_str(), "custom_topic");
+
     }
 
     #[test]
@@ -71,12 +69,11 @@ mod tests {
             _ => panic!("Expected TokenPrice"),
         }
 
-        // Test parsing custom topics
-        let parsed = Topic::from_str("unknown_topic");
-        match parsed {
-            Topic::Custom(topic) => assert_eq!(topic, "unknown_topic"),
-            _ => panic!("Expected Custom"),
-        }
+        // Test that unknown topics panic (strictly typed)
+        let result = std::panic::catch_unwind(|| {
+            Topic::from_str("unknown_topic")
+        });
+        assert!(result.is_err(), "Expected panic for unknown topic");
     }
 
     #[test]
@@ -177,16 +174,5 @@ mod tests {
         assert!(result.is_ok());
     }
 
-    #[tokio::test]
-    async fn test_custom_subscription() {
-        let client = SparkScanWsClient::new("ws://localhost:8000/connection/websocket");
-        let result = client.subscribe_to_custom("custom_topic").await;
-        assert!(result.is_ok());
-        
-        let subscription = result.unwrap();
-        match subscription.topic() {
-            Topic::Custom(topic) => assert_eq!(topic, "custom_topic"),
-            _ => panic!("Expected Custom topic"),
-        }
-    }
+
 }
