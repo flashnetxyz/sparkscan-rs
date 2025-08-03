@@ -1,0 +1,41 @@
+{
+    "properties": {
+        "network": {
+            "enum": [
+                "MAINNET",
+                "TESTNET",
+                "SIGNET",
+                "REGTEST",
+                "LOCAL"
+            ],
+            "title": "Network",
+            "type": "string"
+        },
+        "address": {
+            "title": "Address",
+            "type": "string"
+        },
+        "token_address": {
+            "title": "Token Address",
+            "type": "string"
+        },
+        "balance": {
+            "title": "Balance",
+            "type": "string"
+        },
+        "processed_at": {
+            "format": "date-time",
+            "title": "Processed At",
+            "type": "string"
+        }
+    },
+    "required": [
+        "network",
+        "address",
+        "token_address",
+        "balance",
+        "processed_at"
+    ],
+    "title": "TokenBalancePayload",
+    "type": "object"
+}

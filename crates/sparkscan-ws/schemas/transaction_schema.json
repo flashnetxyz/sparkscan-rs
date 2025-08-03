@@ -1,0 +1,154 @@
+{
+    "examples": [
+        {
+            "amount_sats": "2",
+            "bitcoin_txid": null,
+            "expired_time": null,
+            "from_identifier": "sp1pgssxcx50vur56y0cxhfv0cvpdawy6mhm7r6v43zgjmxj2yzv2lrucf4nlkjhl",
+            "id": "01986c7a-6944-75a2-99e1-20ec42c8a72e",
+            "network": "MAINNET",
+            "processed_at": "2025-08-02T20:30:22.954000Z",
+            "status": "confirmed",
+            "to_identifier": "sp1pgssy03nu2fqxfhkf633qkx5gam5gtvh6l2uhl84fccxp0qkjhjjv8ynqvad9t",
+            "token_address": null,
+            "token_amount": null,
+            "token_io_details": null,
+            "type": "spark_to_lightning",
+            "updated_at": "2025-08-02T20:30:22.828535Z"
+        }
+    ],
+    "properties": {
+        "id": {
+            "examples": [
+                "01986c7a-6944-75a2-99e1-20ec42c8a72e"
+            ],
+            "title": "Id",
+            "type": "string"
+        },
+        "network": {
+            "enum": [
+                "MAINNET",
+                "TESTNET",
+                "SIGNET",
+                "REGTEST",
+                "LOCAL"
+            ],
+            "examples": [
+                "MAINNET"
+            ],
+            "title": "Network",
+            "type": "string"
+        },
+        "type": {
+            "examples": [
+                "spark_to_lightning",
+                "lightning_to_spark",
+                "unknown"
+            ],
+            "title": "Type",
+            "type": "string"
+        },
+        "status": {
+            "examples": [
+                "confirmed",
+                "pending",
+                "expired",
+                "failed"
+            ],
+            "title": "Status",
+            "type": "string"
+        },
+        "amount_sats": {
+            "examples": [
+                "2"
+            ],
+            "title": "Amount Sats",
+            "type": "string"
+        },
+        "token_amount": {
+            "examples": [
+                null
+            ],
+            "title": "Token Amount",
+            "type": "string"
+        },
+        "token_address": {
+            "examples": [
+                null
+            ],
+            "title": "Token Address",
+            "type": "string"
+        },
+        "from_identifier": {
+            "examples": [
+                "sp1pgssxsj2dzegse2mdzgmxdr2rd0vrw5pusf4mh4esf6xe5lkycrv5npdpqqzst",
+                "sprt1pgss8596d8yrgeht2dc9mp5pa2acad7dtllfga9m009xp0ee36zf8e834s3rmm",
+                "sp1pgssxcx50vur56y0cxhfv0cvpdawy6mhm7r6v43zgjmxj2yzv2lrucf4nlkjhl",
+                "Bitcoin",
+                "Lightning Network",
+                "Unknown"
+            ],
+            "title": "From Identifier",
+            "type": "string"
+        },
+        "to_identifier": {
+            "examples": [
+                "sp1pgssxsj2dzegse2mdzgmxdr2rd0vrw5pusf4mh4esf6xe5lkycrv5npdpqqzst",
+                "sprt1pgss8596d8yrgeht2dc9mp5pa2acad7dtllfga9m009xp0ee36zf8e834s3rmm",
+                "sp1pgssy03nu2fqxfhkf633qkx5gam5gtvh6l2uhl84fccxp0qkjhjjv8ynqvad9t",
+                "Bitcoin",
+                "Lightning Network",
+                "Unknown"
+            ],
+            "title": "To Identifier",
+            "type": "string"
+        },
+        "bitcoin_txid": {
+            "examples": [
+                null
+            ],
+            "title": "Bitcoin Txid",
+            "type": "string"
+        },
+        "token_io_details": {
+            "examples": [
+                null
+            ],
+            "title": "Token Io Details",
+            "type": "string"
+        },
+        "updated_at": {
+            "examples": [
+                "2025-08-02T20:30:22.828535Z"
+            ],
+            "format": "date-time",
+            "title": "Updated At",
+            "type": "string"
+        },
+        "expired_time": {
+            "examples": [
+                null
+            ],
+            "format": "date-time",
+            "title": "Expired Time",
+            "type": "string"
+        },
+        "processed_at": {
+            "examples": [
+                "2025-08-02T20:30:22.954000Z"
+            ],
+            "format": "date-time",
+            "title": "Processed At",
+            "type": "string"
+        }
+    },
+    "required": [
+        "id",
+        "network",
+        "type",
+        "status",
+        "processed_at"
+    ],
+    "title": "TransactionPayload",
+    "type": "object"
+}

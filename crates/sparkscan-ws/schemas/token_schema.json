@@ -1,0 +1,180 @@
+{
+    "examples": [
+        {
+            "address": "btkn1daywtenlww42njymqzyegvcwuy3p9f26zknme0srxa7tagewvuys86h553",
+            "calculated_at": "2025-08-02T12:00:00Z",
+            "circulating_mcap": "1444187680",
+            "circulating_supply": "2099110000000000",
+            "decimals": 8,
+            "holders": 3507,
+            "is_freezable": false,
+            "issuer": "sp1pgss98jd2runrstsuyqvrdcjnc6nehwknj9w2zljwnn6dzc9z3803d27rdn5nz",
+            "max_mcap": "1444800000",
+            "max_supply": "2100000000000000",
+            "name": "FlashSparks",
+            "network": "MAINNET",
+            "price_sats": "68.8",
+            "pricing_source": "sparksat",
+            "ticker": "FSPKS"
+        },
+        {
+            "address": "btkn1f0wpf28xhs6sswxkthx9fzrv2x9476yk95wlucp4sfuqmxnu8zesv2gsws",
+            "calculated_at": "2025-08-02T12:00:00Z",
+            "circulating_mcap": "233100000",
+            "circulating_supply": "2100000000000000",
+            "decimals": 8,
+            "holders": 1147,
+            "is_freezable": false,
+            "issuer": "sp1pgssxaat4ha6hrxpl4ec974c0q66kp306ukr4emx97nt27fppl9pdn2eu0w76v",
+            "max_mcap": "233100000",
+            "max_supply": "2100000000000000",
+            "name": "Snowflake",
+            "network": "MAINNET",
+            "price_sats": "11.1",
+            "pricing_source": "sparksat",
+            "ticker": "SNOW"
+        }
+    ],
+    "properties": {
+        "address": {
+            "examples": [
+                "btkn1daywtenlww42njymqzyegvcwuy3p9f26zknme0srxa7tagewvuys86h553",
+                "btkn1f0wpf28xhs6sswxkthx9fzrv2x9476yk95wlucp4sfuqmxnu8zesv2gsws"
+            ],
+            "title": "Address",
+            "type": "string"
+        },
+        "network": {
+            "enum": [
+                "MAINNET",
+                "TESTNET",
+                "SIGNET",
+                "REGTEST",
+                "LOCAL"
+            ],
+            "examples": [
+                "MAINNET",
+                "REGTEST"
+            ],
+            "title": "Network",
+            "type": "string"
+        },
+        "name": {
+            "examples": [
+                "FlashSparks",
+                "Snowflake"
+            ],
+            "title": "Name",
+            "type": "string"
+        },
+        "ticker": {
+            "examples": [
+                "FSPKS",
+                "SNOW"
+            ],
+            "title": "Ticker",
+            "type": "string"
+        },
+        "decimals": {
+            "examples": [
+                8
+            ],
+            "title": "Decimals",
+            "type": "integer"
+        },
+        "issuer": {
+            "examples": [
+                "sp1pgss98jd2runrstsuyqvrdcjnc6nehwknj9w2zljwnn6dzc9z3803d27rdn5nz",
+                "sp1pgssxaat4ha6hrxpl4ec974c0q66kp306ukr4emx97nt27fppl9pdn2eu0w76v"
+            ],
+            "title": "Issuer",
+            "type": "string"
+        },
+        "is_freezable": {
+            "examples": [
+                false
+            ],
+            "title": "Is Freezable",
+            "type": "boolean"
+        },
+        "holders": {
+            "examples": [
+                3507,
+                1147
+            ],
+            "title": "Holders",
+            "type": "integer"
+        },
+        "price_sats": {
+            "examples": [
+                "68.8",
+                "11.1"
+            ],
+            "pattern": "^[0-9]+(\\.[0-9]+)?$",
+            "title": "Price Sats",
+            "type": "string"
+        },
+        "pricing_source": {
+            "enum": [
+                "sparksat",
+                "flashnet"
+            ],
+            "examples": [
+                "sparksat"
+            ],
+            "title": "Pricing Source",
+            "type": "string"
+        },
+        "max_supply": {
+            "examples": [
+                "2100000000000000"
+            ],
+            "title": "Max Supply",
+            "type": "string"
+        },
+        "circulating_supply": {
+            "examples": [
+                "2099110000000000",
+                "2100000000000000"
+            ],
+            "title": "Circulating Supply",
+            "type": "string"
+        },
+        "max_mcap": {
+            "examples": [
+                "1444800000",
+                "233100000"
+            ],
+            "title": "Max Mcap",
+            "type": "string"
+        },
+        "circulating_mcap": {
+            "examples": [
+                "1444187680",
+                "233100000"
+            ],
+            "title": "Circulating Mcap",
+            "type": "string"
+        },
+        "calculated_at": {
+            "examples": [
+                "2025-08-02T12:00:00Z"
+            ],
+            "format": "date-time",
+            "title": "Calculated At",
+            "type": "string"
+        }
+    },
+    "required": [
+        "address",
+        "network",
+        "name",
+        "ticker",
+        "decimals",
+        "issuer",
+        "is_freezable",
+        "holders"
+    ],
+    "title": "TokenPayload",
+    "type": "object"
+}

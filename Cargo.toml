@@ -2,6 +2,7 @@
 members = [
 	"crates/sparkscan",
     "crates/sparkscan-client",
+    "crates/sparkscan-ws",
 ]
 
 resolver = "2"

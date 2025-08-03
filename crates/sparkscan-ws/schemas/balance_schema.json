@@ -1,0 +1,76 @@
+{
+    "examples": [
+        {
+            "address": "sp1pgssx6rwqjer2xsmhe5x6mg6ng0cfu77q58vtcz9f0emuuzftnl7zvv6qujs5s",
+            "hard_balance": "301",
+            "network": "MAINNET",
+            "processed_at": "2025-08-02T20:02:54.035000Z",
+            "soft_balance": "379"
+        },
+        {
+            "address": "sp1pgssywn703tnm4elyt5m3wknme0t9nxx7vqu6k7rjjxvzl5fjs6t3sa4zs9gre",
+            "hard_balance": "2229",
+            "network": "MAINNET",
+            "processed_at": "2025-08-02T20:16:34.954000Z",
+            "soft_balance": "2229"
+        }
+    ],
+    "properties": {
+        "address": {
+            "examples": [
+                "sp1pgssx6rwqjer2xsmhe5x6mg6ng0cfu77q58vtcz9f0emuuzftnl7zvv6qujs5s",
+                "sp1pgssywn703tnm4elyt5m3wknme0t9nxx7vqu6k7rjjxvzl5fjs6t3sa4zs9gre"
+            ],
+            "title": "Address",
+            "type": "string"
+        },
+        "network": {
+            "enum": [
+                "MAINNET",
+                "TESTNET",
+                "SIGNET",
+                "REGTEST",
+                "LOCAL"
+            ],
+            "examples": [
+                "MAINNET"
+            ],
+            "title": "Network",
+            "type": "string"
+        },
+        "soft_balance": {
+            "examples": [
+                "379",
+                "2229"
+            ],
+            "title": "Soft Balance",
+            "type": "string"
+        },
+        "hard_balance": {
+            "examples": [
+                "301",
+                "2229"
+            ],
+            "title": "Hard Balance",
+            "type": "string"
+        },
+        "processed_at": {
+            "examples": [
+                "2025-08-02T20:02:54.035000Z",
+                "2025-08-02T20:16:34.954000Z"
+            ],
+            "format": "date-time",
+            "title": "Processed At",
+            "type": "string"
+        }
+    },
+    "required": [
+        "address",
+        "network",
+        "soft_balance",
+        "hard_balance",
+        "processed_at"
+    ],
+    "title": "BalancePayload",
+    "type": "object"
+}

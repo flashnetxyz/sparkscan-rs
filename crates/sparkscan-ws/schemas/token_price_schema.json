@@ -1,0 +1,79 @@
+{
+    "examples": [
+        {
+            "address": "btkn1daywtenlww42njymqzyegvcwuy3p9f26zknme0srxa7tagewvuys86h553",
+            "network": "MAINNET",
+            "price_sats": "68.8",
+            "processed_at": "2025-08-02T12:00:00Z",
+            "protocol": "sparksat"
+        },
+        {
+            "address": "btkn1f0wpf28xhs6sswxkthx9fzrv2x9476yk95wlucp4sfuqmxnu8zesv2gsws",
+            "network": "MAINNET",
+            "price_sats": "11.1",
+            "processed_at": "2025-08-02T12:00:00Z",
+            "protocol": "sparksat"
+        }
+    ],
+    "properties": {
+        "address": {
+            "examples": [
+                "btkn1daywtenlww42njymqzyegvcwuy3p9f26zknme0srxa7tagewvuys86h553",
+                "btkn1f0wpf28xhs6sswxkthx9fzrv2x9476yk95wlucp4sfuqmxnu8zesv2gsws"
+            ],
+            "title": "Address",
+            "type": "string"
+        },
+        "network": {
+            "enum": [
+                "MAINNET",
+                "TESTNET",
+                "SIGNET",
+                "REGTEST",
+                "LOCAL"
+            ],
+            "examples": [
+                "MAINNET"
+            ],
+            "title": "Network",
+            "type": "string"
+        },
+        "protocol": {
+            "enum": [
+                "sparksat",
+                "flashnet"
+            ],
+            "examples": [
+                "sparksat"
+            ],
+            "title": "Protocol",
+            "type": "string"
+        },
+        "price_sats": {
+            "examples": [
+                "68.8",
+                "11.1"
+            ],
+            "pattern": "^[0-9]+(\\.[0-9]+)?$",
+            "title": "Price Sats",
+            "type": "string"
+        },
+        "processed_at": {
+            "examples": [
+                "2025-08-02T12:00:00Z"
+            ],
+            "format": "date-time",
+            "title": "Processed At",
+            "type": "string"
+        }
+    },
+    "required": [
+        "address",
+        "network",
+        "protocol",
+        "price_sats",
+        "processed_at"
+    ],
+    "title": "TokenPricePayload",
+    "type": "object"
+}
