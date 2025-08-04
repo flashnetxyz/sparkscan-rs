@@ -1,5 +1,5 @@
 //! Type definitions for SparkScan WebSocket messages.
-//! 
+//!
 //! This module contains the generated types from JSON schemas and helper
 //! functions for message dispatching.
 
@@ -15,19 +15,19 @@ pub enum SparkScanMessage {
     /// Balance update message
     #[serde(rename = "balance")]
     Balance(BalancePayload),
-    
+
     /// Token balance update message
     #[serde(rename = "token_balance")]
     TokenBalance(TokenBalancePayload),
-    
+
     /// Token price update message
     #[serde(rename = "token_price")]
     TokenPrice(TokenPricePayload),
-    
+
     /// Token information update message
     #[serde(rename = "token")]
     Token(TokenPayload),
-    
+
     /// Transaction update message
     #[serde(rename = "transaction")]
     Transaction(TransactionPayload),
@@ -66,7 +66,7 @@ pub enum Topic {
     BalanceNetwork(String),
     /// Balance updates for a specific address
     BalanceAddress(String),
-    
+
     /// Token balance updates for all
     TokenBalances,
     /// Token balance updates filtered by network
@@ -75,14 +75,14 @@ pub enum Topic {
     TokenBalanceIdentifier(String),
     /// Token balance updates for a specific address
     TokenBalanceAddress(String),
-    
+
     /// Token price updates for all
     TokenPrices,
     /// Token price updates filtered by network
     TokenPriceNetwork(String),
     /// Token price updates for a specific token identifier
     TokenPriceIdentifier(String),
-    
+
     /// Transaction updates for all
     Transactions,
     /// Transaction updates filtered by network
@@ -91,7 +91,7 @@ pub enum Topic {
     TransactionIn(String, String),
     /// Outgoing transaction updates for network and field (address/bitcoin/lightning)
     TransactionOut(String, String),
-    
+
     /// Token information updates for all
     Tokens,
     /// Token information for a specific token identifier
@@ -109,21 +109,29 @@ impl Topic {
             Topic::Balances => "balances".to_string(),
             Topic::BalanceNetwork(network) => format!("/balance/network/{}", network),
             Topic::BalanceAddress(address) => format!("/balance/address/{}", address),
-            
+
             Topic::TokenBalances => "token_balances".to_string(),
             Topic::TokenBalanceNetwork(network) => format!("/token_balance/network/{}", network),
-            Topic::TokenBalanceIdentifier(identifier) => format!("/token_balance/identifier/{}", identifier),
+            Topic::TokenBalanceIdentifier(identifier) => {
+                format!("/token_balance/identifier/{}", identifier)
+            }
             Topic::TokenBalanceAddress(address) => format!("/token_balance/address/{}", address),
-            
+
             Topic::TokenPrices => "token_prices".to_string(),
             Topic::TokenPriceNetwork(network) => format!("/token_price/network/{}", network),
-            Topic::TokenPriceIdentifier(identifier) => format!("/token_price/identifier/{}", identifier),
-            
+            Topic::TokenPriceIdentifier(identifier) => {
+                format!("/token_price/identifier/{}", identifier)
+            }
+
             Topic::Transactions => "transactions".to_string(),
             Topic::TransactionNetwork(network) => format!("/transaction/network/{}", network),
-            Topic::TransactionIn(network, field) => format!("/transaction/in/{}/{}", network, field),
-            Topic::TransactionOut(network, field) => format!("/transaction/out/{}/{}", network, field),
-            
+            Topic::TransactionIn(network, field) => {
+                format!("/transaction/in/{}/{}", network, field)
+            }
+            Topic::TransactionOut(network, field) => {
+                format!("/transaction/out/{}/{}", network, field)
+            }
+
             Topic::Tokens => "tokens".to_string(),
             Topic::TokenIdentifier(identifier) => format!("/token/identifier/{}", identifier),
             Topic::TokenNetwork(network) => format!("/token/network/{}", network),
@@ -142,7 +150,7 @@ impl Topic {
             "tokens" => return Topic::Tokens,
             _ => {}
         }
-        
+
         // Handle path-based topics
         if let Some(rest) = topic.strip_prefix("/balance/network/") {
             Topic::BalanceNetwork(rest.to_string())
@@ -181,13 +189,19 @@ impl Topic {
         } else if let Some(rest) = topic.strip_prefix("/token/issuer/") {
             Topic::TokenIssuer(rest.to_string())
         } else {
-            panic!("Unknown topic: {}. Only predefined topics are supported.", topic);
+            panic!(
+                "Unknown topic: {}. Only predefined topics are supported.",
+                topic
+            );
         }
     }
 }
 
 /// Helper function to try parsing a message based on expected topic type.
-pub fn parse_message_for_topic(topic: &Topic, data: &[u8]) -> crate::error::Result<SparkScanMessage> {
+pub fn parse_message_for_topic(
+    topic: &Topic,
+    data: &[u8],
+) -> crate::error::Result<SparkScanMessage> {
     // Debug: Log the raw data structure to understand the WebSocket message format
     #[cfg(feature = "tracing")]
     {
@@ -198,7 +212,7 @@ pub fn parse_message_for_topic(topic: &Topic, data: &[u8]) -> crate::error::Resu
 
     // First, try to parse as a JSON value
     let json_value: serde_json::Value = serde_json::from_slice(data)?;
-    
+
     // Handle the case where the data itself is a JSON string that needs to be parsed again
     let payload_data = if json_value.is_string() {
         // The entire data is a JSON string, parse it again
@@ -223,7 +237,10 @@ pub fn parse_message_for_topic(topic: &Topic, data: &[u8]) -> crate::error::Resu
             let payload: BalancePayload = serde_json::from_value(payload_data)?;
             Ok(SparkScanMessage::Balance(payload))
         }
-        Topic::TokenBalances | Topic::TokenBalanceNetwork(_) | Topic::TokenBalanceIdentifier(_) | Topic::TokenBalanceAddress(_) => {
+        Topic::TokenBalances
+        | Topic::TokenBalanceNetwork(_)
+        | Topic::TokenBalanceIdentifier(_)
+        | Topic::TokenBalanceAddress(_) => {
             let payload: TokenBalancePayload = serde_json::from_value(payload_data)?;
             Ok(SparkScanMessage::TokenBalance(payload))
         }
@@ -231,11 +248,17 @@ pub fn parse_message_for_topic(topic: &Topic, data: &[u8]) -> crate::error::Resu
             let payload: TokenPricePayload = serde_json::from_value(payload_data)?;
             Ok(SparkScanMessage::TokenPrice(payload))
         }
-        Topic::Tokens | Topic::TokenIdentifier(_) | Topic::TokenNetwork(_) | Topic::TokenIssuer(_) => {
+        Topic::Tokens
+        | Topic::TokenIdentifier(_)
+        | Topic::TokenNetwork(_)
+        | Topic::TokenIssuer(_) => {
             let payload: TokenPayload = serde_json::from_value(payload_data)?;
             Ok(SparkScanMessage::Token(payload))
         }
-        Topic::Transactions | Topic::TransactionNetwork(_) | Topic::TransactionIn(_, _) | Topic::TransactionOut(_, _) => {
+        Topic::Transactions
+        | Topic::TransactionNetwork(_)
+        | Topic::TransactionIn(_, _)
+        | Topic::TransactionOut(_, _) => {
             let payload: TransactionPayload = serde_json::from_value(payload_data)?;
             Ok(SparkScanMessage::Transaction(payload))
         }
@@ -254,7 +277,7 @@ mod tests {
         assert_eq!(Topic::from_str("token_prices"), Topic::TokenPrices);
         assert_eq!(Topic::from_str("transactions"), Topic::Transactions);
         assert_eq!(Topic::from_str("tokens"), Topic::Tokens);
-        
+
         // Balance topics
         assert_eq!(
             Topic::from_str("/balance/network/mainnet"),
@@ -264,7 +287,7 @@ mod tests {
             Topic::from_str("/balance/address/sp1abc123"),
             Topic::BalanceAddress("sp1abc123".to_string())
         );
-        
+
         // Token balance topics
         assert_eq!(
             Topic::from_str("/token_balance/network/mainnet"),
@@ -278,7 +301,7 @@ mod tests {
             Topic::from_str("/token_balance/address/sp1def456"),
             Topic::TokenBalanceAddress("sp1def456".to_string())
         );
-        
+
         // Transaction topics
         assert_eq!(
             Topic::from_str("/transaction/in/mainnet/sp1abc123"),
@@ -295,8 +318,8 @@ mod tests {
         // Basic topics
         assert_eq!(Topic::Balances.as_str(), "balances");
         assert_eq!(Topic::TokenBalances.as_str(), "token_balances");
-        
-        // Balance topics  
+
+        // Balance topics
         assert_eq!(
             Topic::BalanceNetwork("mainnet".to_string()).as_str(),
             "/balance/network/mainnet"
@@ -305,13 +328,13 @@ mod tests {
             Topic::BalanceAddress("sp1abc123".to_string()).as_str(),
             "/balance/address/sp1abc123"
         );
-        
+
         // Token balance topics
         assert_eq!(
             Topic::TokenBalanceIdentifier("btkn1xyz".to_string()).as_str(),
             "/token_balance/identifier/btkn1xyz"
         );
-        
+
         // Transaction topics
         assert_eq!(
             Topic::TransactionIn("mainnet".to_string(), "sp1abc123".to_string()).as_str(),

@@ -1,13 +1,12 @@
-//! WebSocket client implementation example demonstrating subscription patterns.
+//! Comprehensive WebSocket client implementation example demonstrating subscription patterns.
 //!
-//! Shows client initialization, connection management, subscription creation,
-//! and message handling for different topic types.
+//! This example showcases complete client initialization, connection management,
+//! subscription creation, and message handling for all available topic types.
+//! Demonstrates real-world usage patterns for production applications.
 //!
 //! Run with: cargo run --example basic_usage
 
-use sparkscan_ws::{
-    SparkScanWsClient, SparkScanWsConfig, Topic, SparkScanMessage,
-};
+use sparkscan_ws::{SparkScanMessage, SparkScanWsClient, SparkScanWsConfig, Topic};
 use std::time::Duration;
 
 #[tokio::main]
@@ -24,7 +23,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 Targets::new()
                     .with_default(LevelFilter::INFO)
                     .with_target("sparkscan_ws", LevelFilter::TRACE)
-                    .with_target("tokio_centrifuge", LevelFilter::DEBUG)
+                    .with_target("tokio_centrifuge", LevelFilter::DEBUG),
             )
             .init();
 
@@ -40,15 +39,15 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!("SparkScan WebSocket SDK Basic Usage Example");
     println!("============================================");
 
-    // Create a client configuration
-    let config = SparkScanWsConfig::new("ws://updates.sparkscan.io")
+    // Create a production-ready client configuration
+    let config = SparkScanWsConfig::new("ws://updates.sparkscan.io/")
         .with_auto_reconnect(true)
         .with_max_reconnect_attempts(5)
         .with_reconnect_delay(2000);
 
     let client = SparkScanWsClient::with_config(config);
 
-    // Set up connection event handlers
+    // Configure connection event handlers for monitoring and logging
     client.on_connecting(|| {
         println!("Connecting to SparkScan WebSocket...");
     });
@@ -65,210 +64,207 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         eprintln!("WebSocket error: {}", error);
     });
 
-    // Connect to the WebSocket server
+    // Establish connection to SparkScan WebSocket API
     println!("Initiating connection...");
     client.connect().await?;
 
-    // Wait a moment for connection to establish
+    // Allow time for connection establishment and handshake
     tokio::time::sleep(Duration::from_secs(2)).await;
 
-    // Example 1: Subscribe to all balance updates
+    // Example 1: Subscribe to global balance updates across all addresses
     println!("\nSubscribing to balance updates...");
     let balance_subscription = client.subscribe(Topic::Balances).await?;
-    
+
     balance_subscription.on_subscribed(|| {
         println!("Subscribed to balance updates");
     });
 
-    balance_subscription.on_message(|message| {
-        match message {
-            SparkScanMessage::Balance(balance) => {
-                println!("Balance Update:");
-                println!("   Address: {}", balance.address);
-                println!("   Soft Balance: {} sats", balance.soft_balance);
-                println!("   Hard Balance: {} sats", balance.hard_balance);
-                println!("   Network: {}", balance.network);
-                println!("   Processed At: {}", balance.processed_at);
-            }
-            _ => {
-                println!("Received unexpected message type for balance subscription");
-            }
+    balance_subscription.on_message(|message| match message {
+        SparkScanMessage::Balance(balance) => {
+            println!("Balance Update:");
+            println!("   Address: {}", balance.address);
+            println!("   Soft Balance: {} sats", balance.soft_balance);
+            println!("   Hard Balance: {} sats", balance.hard_balance);
+            println!("   Network: {}", balance.network);
+            println!("   Processed At: {}", balance.processed_at);
+        }
+        _ => {
+            println!("Received unexpected message type for balance subscription");
         }
     });
 
     balance_subscription.subscribe();
 
-    // Example 2: Subscribe to token price updates
+    // Example 2: Subscribe to real-time token price feeds
     println!("\nSubscribing to token price updates...");
     let token_price_subscription = client.subscribe(Topic::TokenPrices).await?;
-    
+
     token_price_subscription.on_subscribed(|| {
         println!("Subscribed to token price updates");
     });
 
-    token_price_subscription.on_message(|message| {
-        match message {
-            SparkScanMessage::TokenPrice(price) => {
-                println!("Token Price Update:");
-                println!("   Token: {}", price.address);
-                println!("   Price: {:?} sats", price.price_sats);
-                println!("   Protocol: {:?}", price.protocol);
-                println!("   Network: {:?}", price.network);
-                println!("   Processed At: {}", price.processed_at);
-            }
-            _ => {
-                println!("Received unexpected message type for token price subscription");
-            }
+    token_price_subscription.on_message(|message| match message {
+        SparkScanMessage::TokenPrice(price) => {
+            println!("Token Price Update:");
+            println!("   Token: {}", price.address);
+            println!("   Price: {:?} sats", price.price_sats);
+            println!("   Protocol: {:?}", price.protocol);
+            println!("   Network: {:?}", price.network);
+            println!("   Processed At: {}", price.processed_at);
+        }
+        _ => {
+            println!("Received unexpected message type for token price subscription");
         }
     });
 
     token_price_subscription.subscribe();
 
-    // Example 3: Subscribe to transaction updates
+    // Example 3: Subscribe to transaction confirmations and status updates
     println!("\nSubscribing to transaction updates...");
     let transaction_subscription = client.subscribe(Topic::Transactions).await?;
-    
+
     transaction_subscription.on_subscribed(|| {
         println!("Subscribed to transaction updates");
     });
 
-    transaction_subscription.on_message(|message| {
-        match message {
-            SparkScanMessage::Transaction(tx) => {
-                println!("Transaction Update:");
-                println!("   ID: {}", tx.id);
-                println!("   Type: {}", tx.type_);
-                println!("   Status: {}", tx.status);
-                if let Some(amount) = &tx.amount_sats {
-                    println!("   Amount: {} sats", amount);
-                }
-                if let Some(from) = &tx.from_identifier {
-                    println!("   From: {}", from);
-                }
-                if let Some(to) = &tx.to_identifier {
-                    println!("   To: {}", to);
-                }
-                println!("   Network: {:?}", tx.network);
-                println!("   Processed At: {}", tx.processed_at);
+    transaction_subscription.on_message(|message| match message {
+        SparkScanMessage::Transaction(tx) => {
+            println!("Transaction Update:");
+            println!("   ID: {}", tx.id);
+            println!("   Type: {}", tx.type_);
+            println!("   Status: {}", tx.status);
+            if let Some(amount) = &tx.amount_sats {
+                println!("   Amount: {} sats", amount);
             }
-            _ => {
-                println!("Received unexpected message type for transaction subscription");
+            if let Some(from) = &tx.from_identifier {
+                println!("   From: {}", from);
             }
+            if let Some(to) = &tx.to_identifier {
+                println!("   To: {}", to);
+            }
+            println!("   Network: {:?}", tx.network);
+            println!("   Processed At: {}", tx.processed_at);
+        }
+        _ => {
+            println!("Received unexpected message type for transaction subscription");
         }
     });
 
     transaction_subscription.subscribe();
 
-    // Example 4: Subscribe to a specific address balance
+    // Example 4: Monitor balance changes for a specific address
     let specific_address = "sp1pgssx6rwqjer2xsmhe5x6mg6ng0cfu77q58vtcz9f0emuuzftnl7zvv6qujs5s";
-    println!("\nSubscribing to balance updates for specific address: {}", specific_address);
-    
-    let address_balance_subscription = client.subscribe(
-        Topic::BalanceAddress(specific_address.to_string())
-    ).await?;
-    
+    println!(
+        "\nSubscribing to balance updates for specific address: {}",
+        specific_address
+    );
+
+    let address_balance_subscription = client
+        .subscribe(Topic::BalanceAddress(specific_address.to_string()))
+        .await?;
+
     address_balance_subscription.on_subscribed(|| {
         println!("Subscribed to address-specific balance updates");
     });
 
-    address_balance_subscription.on_message(|message| {
-        match message {
-            SparkScanMessage::Balance(balance) => {
-                println!("Address Balance Update:");
-                println!("   Address: {}", balance.address);
-                println!("   Soft Balance: {} sats", balance.soft_balance);
-                println!("   Hard Balance: {} sats", balance.hard_balance);
-            }
-            _ => {
-                println!("Received unexpected message type for address balance subscription");
-            }
+    address_balance_subscription.on_message(|message| match message {
+        SparkScanMessage::Balance(balance) => {
+            println!("Address Balance Update:");
+            println!("   Address: {}", balance.address);
+            println!("   Soft Balance: {} sats", balance.soft_balance);
+            println!("   Hard Balance: {} sats", balance.hard_balance);
+        }
+        _ => {
+            println!("Received unexpected message type for address balance subscription");
         }
     });
 
     address_balance_subscription.subscribe();
 
-    // Example 5: Subscribe to mainnet balance updates only
+    // Example 5: Filter balance updates by network (mainnet only)
     println!("\nSubscribing to mainnet balance updates...");
-    let mainnet_balance_subscription = client.subscribe(
-        Topic::BalanceNetwork("mainnet".to_string())
-    ).await?;
-    
+    let mainnet_balance_subscription = client
+        .subscribe(Topic::BalanceNetwork("mainnet".to_string()))
+        .await?;
+
     mainnet_balance_subscription.on_subscribed(|| {
         println!("Subscribed to mainnet balance updates");
     });
 
-    mainnet_balance_subscription.on_message(|message| {
-        match message {
-            SparkScanMessage::Balance(balance) => {
-                println!("Mainnet Balance Update:");
-                println!("   Address: {}", balance.address);
-                println!("   Balance: {} sats", balance.soft_balance);
-            }
-            _ => {
-                println!("Received unexpected message type for mainnet balance subscription");
-            }
+    mainnet_balance_subscription.on_message(|message| match message {
+        SparkScanMessage::Balance(balance) => {
+            println!("Mainnet Balance Update:");
+            println!("   Address: {}", balance.address);
+            println!("   Balance: {} sats", balance.soft_balance);
+        }
+        _ => {
+            println!("Received unexpected message type for mainnet balance subscription");
         }
     });
 
     mainnet_balance_subscription.subscribe();
 
-    // Example 6: Subscribe to incoming transactions for a specific network and address
+    // Example 6: Monitor incoming transactions for specific network and address
     println!("\nSubscribing to incoming transactions for mainnet address...");
-    let tx_in_subscription = client.subscribe(
-        Topic::TransactionIn("mainnet".to_string(), specific_address.to_string())
-    ).await?;
-    
+    let tx_in_subscription = client
+        .subscribe(Topic::TransactionIn(
+            "mainnet".to_string(),
+            specific_address.to_string(),
+        ))
+        .await?;
+
     tx_in_subscription.on_subscribed(|| {
         println!("Subscribed to incoming transaction updates");
     });
 
-    tx_in_subscription.on_message(|message| {
-        match message {
-            SparkScanMessage::Transaction(tx) => {
-                println!("Incoming Transaction:");
-                println!("   ID: {}", tx.id);
-                println!("   From: {:?}", tx.from_identifier);
-                if let Some(amount) = &tx.amount_sats {
-                    println!("   Amount: {} sats", amount);
-                }
+    tx_in_subscription.on_message(|message| match message {
+        SparkScanMessage::Transaction(tx) => {
+            println!("Incoming Transaction:");
+            println!("   ID: {}", tx.id);
+            println!("   From: {:?}", tx.from_identifier);
+            if let Some(amount) = &tx.amount_sats {
+                println!("   Amount: {} sats", amount);
             }
-            _ => {
-                println!("Received unexpected message type for incoming transaction subscription");
-            }
+        }
+        _ => {
+            println!("Received unexpected message type for incoming transaction subscription");
         }
     });
 
     tx_in_subscription.subscribe();
 
-    // Example 7: Subscribe to outgoing transactions to Lightning Network
+    // Example 7: Track outgoing transactions to Lightning Network protocol
     println!("\nSubscribing to Lightning Network outgoing transactions...");
-    let tx_out_lightning_subscription = client.subscribe(
-        Topic::TransactionOut("mainnet".to_string(), "lightning".to_string())
-    ).await?;
-    
+    let tx_out_lightning_subscription = client
+        .subscribe(Topic::TransactionOut(
+            "mainnet".to_string(),
+            "lightning".to_string(),
+        ))
+        .await?;
+
     tx_out_lightning_subscription.on_subscribed(|| {
         println!("Subscribed to Lightning Network outgoing transactions");
     });
 
-    tx_out_lightning_subscription.on_message(|message| {
-        match message {
-            SparkScanMessage::Transaction(tx) => {
-                println!("Lightning Outgoing Transaction:");
-                println!("   ID: {}", tx.id);
-                println!("   To: {:?}", tx.to_identifier);
-                if let Some(amount) = &tx.amount_sats {
-                    println!("   Amount: {} sats", amount);
-                }
+    tx_out_lightning_subscription.on_message(|message| match message {
+        SparkScanMessage::Transaction(tx) => {
+            println!("Lightning Outgoing Transaction:");
+            println!("   ID: {}", tx.id);
+            println!("   To: {:?}", tx.to_identifier);
+            if let Some(amount) = &tx.amount_sats {
+                println!("   Amount: {} sats", amount);
             }
-            _ => {
-                println!("Received unexpected message type for Lightning outgoing transaction subscription");
-            }
+        }
+        _ => {
+            println!(
+                "Received unexpected message type for Lightning outgoing transaction subscription"
+            );
         }
     });
 
     tx_out_lightning_subscription.subscribe();
 
-    // Set up error handlers for subscriptions
+    // Configure comprehensive error handlers for all subscriptions
     balance_subscription.on_error(|err| {
         eprintln!("Balance subscription error: {}", err);
     });
@@ -284,7 +280,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!("\nAll subscriptions set up! Listening for messages...");
     println!("Press Ctrl+C to exit.\n");
 
-    // Keep the application running
+    // Maintain active connection and process incoming messages
     match tokio::signal::ctrl_c().await {
         Ok(()) => {
             println!("\nShutting down gracefully...");
@@ -294,7 +290,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         }
     }
 
-    // Clean shutdown
+    // Perform graceful shutdown sequence
     println!("Cleaning up subscriptions...");
     balance_subscription.unsubscribe();
     token_price_subscription.unsubscribe();
@@ -308,18 +304,23 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     Ok(())
 }
 
-/// Helper function to demonstrate publishing messages (if supported by server)
+/// Helper function demonstrating message publishing capabilities (requires server support).
+///
+/// Shows how to construct and publish typed messages back to the SparkScan API
+/// when bidirectional communication is enabled on the server side.
 #[allow(dead_code)]
-async fn demonstrate_publishing(client: &SparkScanWsClient) -> Result<(), Box<dyn std::error::Error>> {
+async fn demonstrate_publishing(
+    client: &SparkScanWsClient,
+) -> Result<(), Box<dyn std::error::Error>> {
     use sparkscan_ws::{BalancePayload, SparkScanMessage};
-    
+
     println!("Demonstrating message publishing...");
-    
+
     let subscription = client.subscribe(Topic::Balances).await?;
-    
-    // Create a sample balance message
+
+    // Construct a sample balance payload with realistic data
     use sparkscan_ws::types::Network;
-    
+
     let balance = BalancePayload {
         address: "sp1example123".to_string(),
         network: Network::Regtest,
@@ -327,14 +328,14 @@ async fn demonstrate_publishing(client: &SparkScanWsClient) -> Result<(), Box<dy
         hard_balance: "950".to_string(),
         processed_at: chrono::Utc::now(),
     };
-    
+
     let message = SparkScanMessage::Balance(balance);
-    
-    // Publish the message (note: this requires server support for client publishing)
+
+    // Attempt to publish message (requires server-side publishing support)
     match subscription.publish(&message) {
         Ok(()) => println!("Message published successfully"),
         Err(e) => eprintln!("Failed to publish message: {}", e),
     }
-    
+
     Ok(())
 }

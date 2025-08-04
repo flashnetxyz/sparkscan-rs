@@ -1,14 +1,14 @@
 //! WebSocket subscription management for SparkScan.
 
-use std::sync::Arc;
-use tokio_centrifuge::subscription::Subscription;
 use crate::{
     error::Result,
-    types::{SparkScanMessage, Topic, parse_message_for_topic},
+    types::{parse_message_for_topic, SparkScanMessage, Topic},
 };
+use std::sync::Arc;
+use tokio_centrifuge::subscription::Subscription;
 
 /// Typed WebSocket subscription handler.
-/// 
+///
 /// Wraps tokio-centrifuge subscription with type-safe message deserialization
 /// based on topic-specific message types.
 pub struct SparkScanSubscription {
@@ -20,7 +20,7 @@ pub struct SparkScanSubscription {
 
 impl SparkScanSubscription {
     /// Create new typed subscription.
-    /// 
+    ///
     /// Typically called internally by client.
     pub fn new(inner: Subscription, topic: Topic) -> Self {
         Self { inner, topic }
@@ -32,14 +32,14 @@ impl SparkScanSubscription {
     }
 
     /// Register callback for subscription establishment.
-    /// 
+    ///
     /// # Example
     /// ```rust,no_run
     /// # use sparkscan_ws::*;
     /// # async fn example() -> Result<()> {
-    /// # let client = SparkScanWsClient::new("ws://localhost:8000/connection/websocket");
+    /// # let client = SparkScanWsClient::new("ws://updates.sparkscan.io/");
     /// let subscription = client.subscribe(Topic::Balances).await?;
-    /// 
+    ///
     /// subscription.on_subscribed(|| {
     ///     println!("Subscription active");
     /// });
@@ -70,17 +70,17 @@ impl SparkScanSubscription {
     }
 
     /// Register callback for typed message handling.
-    /// 
+    ///
     /// Primary method for processing incoming messages. Callback receives
     /// parsed SparkScanMessage enum with topic-appropriate payload.
-    /// 
+    ///
     /// # Example
     /// ```rust,no_run
     /// # use sparkscan_ws::*;
     /// # async fn example() -> Result<()> {
-    /// # let client = SparkScanWsClient::new("ws://localhost:8000/connection/websocket");
+    /// # let client = SparkScanWsClient::new("ws://updates.sparkscan.io/");
     /// let subscription = client.subscribe(Topic::Balances).await?;
-    /// 
+    ///
     /// subscription.on_message(|message| {
     ///     match message {
     ///         SparkScanMessage::Balance(balance) => {
@@ -100,11 +100,11 @@ impl SparkScanSubscription {
     {
         let topic = self.topic.clone();
         let callback = Arc::new(callback);
-        
+
         self.inner.on_publication(move |data| {
             let topic = topic.clone();
             let callback = callback.clone();
-            
+
             match parse_message_for_topic(&topic, &data.data) {
                 Ok(message) => {
                     callback(message);
@@ -112,7 +112,7 @@ impl SparkScanSubscription {
                 Err(e) => {
                     #[cfg(feature = "tracing")]
                     tracing::error!("Failed to parse message for topic {:?}: {}", topic, e);
-                    
+
                     #[cfg(not(feature = "tracing"))]
                     log::error!("Failed to parse message for topic {:?}: {}", topic, e);
                 }
@@ -121,7 +121,7 @@ impl SparkScanSubscription {
     }
 
     /// Register callback for raw message data.
-    /// 
+    ///
     /// Provides access to raw bytes for manual deserialization or debugging.
     pub fn on_raw_publication<F>(&self, callback: F)
     where
@@ -143,7 +143,7 @@ impl SparkScanSubscription {
     }
 
     /// Activate subscription to begin receiving messages.
-    /// 
+    ///
     /// Must be called to start message delivery.
     pub fn subscribe(&self) {
         self.inner.subscribe();
@@ -155,7 +155,7 @@ impl SparkScanSubscription {
     }
 
     /// Publish message to subscription topic.
-    /// 
+    ///
     /// Note: Requires server support for client publishing.
     pub fn publish(&self, message: &SparkScanMessage) -> Result<()> {
         let data = serde_json::to_vec(message)?;
@@ -169,9 +169,9 @@ impl SparkScanSubscription {
     }
 
     /// Check subscription activation status.
-    /// 
+    ///
     /// # Note
-    /// 
+    ///
     /// This function is not currently supported by the underlying tokio-centrifuge crate
     /// as it does not expose subscription state information.
     pub fn is_subscribed(&self) -> bool {
@@ -180,7 +180,7 @@ impl SparkScanSubscription {
 }
 
 /// Subscription collection manager.
-/// 
+///
 /// Manages multiple subscriptions with bulk operation support.
 #[derive(Default)]
 pub struct SubscriptionManager {
@@ -250,7 +250,7 @@ mod tests {
         let manager = SubscriptionManager::new();
         assert!(manager.is_empty());
         assert_eq!(manager.len(), 0);
-        
+
         // Note: We can't easily test with real subscriptions in unit tests
         // since they require a WebSocket connection. Integration tests would
         // be better for testing the full subscription functionality.
@@ -260,7 +260,7 @@ mod tests {
     fn test_topic_conversion() {
         let topic = Topic::Balances;
         assert_eq!(topic.as_str(), "balances");
-        
+
         let parsed = Topic::from_str("balances");
         assert_eq!(parsed, Topic::Balances);
     }

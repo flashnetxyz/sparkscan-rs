@@ -3,10 +3,10 @@ use std::path::Path;
 
 fn main() {
     println!("cargo:rerun-if-changed=schemas/");
-    
+
     let out_dir = std::env::var("OUT_DIR").unwrap();
     let dest_path = Path::new(&out_dir).join("types.rs");
-    
+
     // Read all schema files
     let balance_schema = fs::read_to_string("schemas/balance_schema.json")
         .expect("Failed to read balance_schema.json");
@@ -14,22 +14,23 @@ fn main() {
         .expect("Failed to read token_balance_schema.json");
     let token_price_schema = fs::read_to_string("schemas/token_price_schema.json")
         .expect("Failed to read token_price_schema.json");
-    let token_schema = fs::read_to_string("schemas/token_schema.json")
-        .expect("Failed to read token_schema.json");
+    let token_schema =
+        fs::read_to_string("schemas/token_schema.json").expect("Failed to read token_schema.json");
     let transaction_schema = fs::read_to_string("schemas/transaction_schema.json")
         .expect("Failed to read transaction_schema.json");
 
     // Parse schemas into schemars::schema::RootSchema
-    let balance_schema: schemars::schema::RootSchema = serde_json::from_str(&balance_schema)
-        .expect("Failed to parse balance_schema.json");
-    let token_balance_schema: schemars::schema::RootSchema = serde_json::from_str(&token_balance_schema)
-        .expect("Failed to parse token_balance_schema.json");
-    let token_price_schema: schemars::schema::RootSchema = serde_json::from_str(&token_price_schema)
-        .expect("Failed to parse token_price_schema.json");
-    let token_schema: schemars::schema::RootSchema = serde_json::from_str(&token_schema)
-        .expect("Failed to parse token_schema.json");
-    let transaction_schema: schemars::schema::RootSchema = serde_json::from_str(&transaction_schema)
-        .expect("Failed to parse transaction_schema.json");
+    let balance_schema: schemars::schema::RootSchema =
+        serde_json::from_str(&balance_schema).expect("Failed to parse balance_schema.json");
+    let token_balance_schema: schemars::schema::RootSchema =
+        serde_json::from_str(&token_balance_schema)
+            .expect("Failed to parse token_balance_schema.json");
+    let token_price_schema: schemars::schema::RootSchema =
+        serde_json::from_str(&token_price_schema).expect("Failed to parse token_price_schema.json");
+    let token_schema: schemars::schema::RootSchema =
+        serde_json::from_str(&token_schema).expect("Failed to parse token_schema.json");
+    let transaction_schema: schemars::schema::RootSchema =
+        serde_json::from_str(&transaction_schema).expect("Failed to parse transaction_schema.json");
 
     // Create TypeSpace settings
     let mut settings = typify::TypeSpaceSettings::default();
@@ -37,21 +38,26 @@ fn main() {
 
     // Generate types using typify
     let mut type_space = typify::TypeSpace::new(&settings);
-    
+
     // Add schemas to the type space
-    type_space.add_root_schema(balance_schema)
+    type_space
+        .add_root_schema(balance_schema)
         .expect("Failed to add balance schema");
-    
-    type_space.add_root_schema(token_balance_schema)
+
+    type_space
+        .add_root_schema(token_balance_schema)
         .expect("Failed to add token balance schema");
-    
-    type_space.add_root_schema(token_price_schema)
+
+    type_space
+        .add_root_schema(token_price_schema)
         .expect("Failed to add token price schema");
-    
-    type_space.add_root_schema(token_schema)
+
+    type_space
+        .add_root_schema(token_schema)
         .expect("Failed to add token schema");
-    
-    type_space.add_root_schema(transaction_schema)
+
+    type_space
+        .add_root_schema(transaction_schema)
         .expect("Failed to add transaction schema");
 
     // Generate the code

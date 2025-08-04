@@ -19,9 +19,9 @@ pub enum SparkScanWsError {
 
     /// Unknown message type received
     #[error("Unknown message type: {message_type}")]
-    UnknownMessageType { 
+    UnknownMessageType {
         /// The unknown message type that was received
-        message_type: String 
+        message_type: String,
     },
 
     /// Invalid message format
@@ -34,9 +34,9 @@ pub enum SparkScanWsError {
 
     /// Subscription not found
     #[error("Subscription not found: {topic}")]
-    SubscriptionNotFound { 
+    SubscriptionNotFound {
         /// The topic that was not found
-        topic: String 
+        topic: String,
     },
 
     /// Configuration error

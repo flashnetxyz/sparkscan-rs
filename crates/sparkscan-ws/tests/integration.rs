@@ -5,12 +5,12 @@
 //! a real WebSocket server. Full integration tests would require a test
 //! server setup.
 
-use sparkscan_ws::{
-    SparkScanWsClient, SparkScanWsConfig, Topic, SparkScanMessage,
-    types::{BalancePayload, TokenBalancePayload, parse_message_for_topic, Network},
-    subscription::SubscriptionManager,
-};
 use chrono::{DateTime, Utc};
+use sparkscan_ws::{
+    subscription::SubscriptionManager,
+    types::{parse_message_for_topic, BalancePayload, Network, TokenBalancePayload},
+    SparkScanMessage, SparkScanWsClient, SparkScanWsConfig, Topic,
+};
 
 #[tokio::test]
 async fn test_client_creation_and_config() {
@@ -66,7 +66,7 @@ fn test_topic_enum_completeness() {
     for topic in topics {
         let topic_str = topic.as_str();
         assert!(!topic_str.is_empty());
-        
+
         // Test round-trip conversion
         let parsed = Topic::from_str(&topic_str);
         assert_eq!(parsed.as_str(), topic_str);
@@ -81,7 +81,9 @@ fn test_message_type_detection() {
         network: Network::Regtest,
         soft_balance: "100".to_string(),
         hard_balance: "90".to_string(),
-        processed_at: "2025-08-02T20:02:54.035000Z".parse::<DateTime<Utc>>().unwrap(),
+        processed_at: "2025-08-02T20:02:54.035000Z"
+            .parse::<DateTime<Utc>>()
+            .unwrap(),
     };
     let message = SparkScanMessage::Balance(balance);
     assert_eq!(message.message_type(), "balance");
@@ -93,7 +95,9 @@ fn test_message_type_detection() {
         address: "sp1test".to_string(),
         token_address: "btkn1test".to_string(),
         balance: "500".to_string(),
-        processed_at: "2025-08-02T20:02:54.035000Z".parse::<DateTime<Utc>>().unwrap(),
+        processed_at: "2025-08-02T20:02:54.035000Z"
+            .parse::<DateTime<Utc>>()
+            .unwrap(),
     };
     let message = SparkScanMessage::TokenBalance(token_balance);
     assert_eq!(message.message_type(), "token_balance");
@@ -103,7 +107,7 @@ fn test_message_type_detection() {
 #[test]
 fn test_message_parsing_with_real_schema_data() {
     // Test with data that matches the actual JSON schemas
-    
+
     // Balance message using real API response format
     let balance_json = r#"{
         "address": "sp1pgssx6rwqjer2xsmhe5x6mg6ng0cfu77q58vtcz9f0emuuzftnl7zvv6qujs5s",
@@ -112,17 +116,20 @@ fn test_message_parsing_with_real_schema_data() {
         "processed_at": "2025-08-03T13:26:31.271938Z",
         "soft_balance": "561"
     }"#;
-    
+
     let result = parse_message_for_topic(&Topic::Balances, balance_json.as_bytes());
     assert!(result.is_ok());
-    
+
     if let Ok(SparkScanMessage::Balance(balance)) = result {
         // Just verify the structure is correct and fields are populated
         assert!(!balance.address.is_empty());
         assert!(!balance.hard_balance.is_empty());
         assert!(!balance.soft_balance.is_empty());
         // Network is an enum, check for valid SparkScan networks (mainnet and regtest)
-        assert!(matches!(balance.network, Network::Mainnet | Network::Regtest));
+        assert!(matches!(
+            balance.network,
+            Network::Mainnet | Network::Regtest
+        ));
         // DateTime exists - we can't check is_empty on DateTime
     } else {
         panic!("Expected Balance message");
@@ -136,13 +143,16 @@ fn test_message_parsing_with_real_schema_data() {
         "balance": "1000",
         "processed_at": "2025-08-02T20:02:54.035000Z"
     }"#;
-    
+
     let result = parse_message_for_topic(&Topic::TokenBalances, token_balance_json.as_bytes());
     assert!(result.is_ok());
-    
+
     if let Ok(SparkScanMessage::TokenBalance(token_balance)) = result {
         // Test that required fields are present and valid
-        assert!(matches!(token_balance.network, Network::Mainnet | Network::Regtest));
+        assert!(matches!(
+            token_balance.network,
+            Network::Mainnet | Network::Regtest
+        ));
         assert!(!token_balance.address.is_empty());
         assert!(!token_balance.token_address.is_empty());
         assert!(!token_balance.balance.is_empty());
@@ -160,7 +170,7 @@ fn test_subscription_manager() {
 
     // Note: We can't create real subscriptions without a WebSocket connection
     // This test focuses on the manager's data structure functionality
-    
+
     assert!(manager.get("nonexistent").is_none());
     assert!(manager.remove("nonexistent").is_none());
 }
@@ -168,20 +178,23 @@ fn test_subscription_manager() {
 #[test]
 fn test_error_types() {
     use sparkscan_ws::SparkScanWsError;
-    
+
     // Test error creation methods
     let conn_err = SparkScanWsError::connection("Connection failed");
     assert!(matches!(conn_err, SparkScanWsError::ConnectionError(_)));
-    
+
     let sub_err = SparkScanWsError::subscription("Subscription failed");
     assert!(matches!(sub_err, SparkScanWsError::SubscriptionError(_)));
-    
+
     let unknown_err = SparkScanWsError::unknown_message_type("unknown");
-    assert!(matches!(unknown_err, SparkScanWsError::UnknownMessageType { .. }));
-    
+    assert!(matches!(
+        unknown_err,
+        SparkScanWsError::UnknownMessageType { .. }
+    ));
+
     let config_err = SparkScanWsError::config("Invalid config");
     assert!(matches!(config_err, SparkScanWsError::ConfigError(_)));
-    
+
     // Test that errors implement Display
     assert!(!format!("{}", conn_err).is_empty());
     assert!(!format!("{}", sub_err).is_empty());
@@ -191,8 +204,8 @@ fn test_error_types() {
 
 #[test]
 fn test_constants() {
-    use sparkscan_ws::{VERSION, DEFAULT_MAINNET_URL};
-    
+    use sparkscan_ws::{DEFAULT_MAINNET_URL, VERSION};
+
     assert!(!VERSION.is_empty());
     assert!(DEFAULT_MAINNET_URL.starts_with("ws://"));
 }
@@ -201,7 +214,7 @@ fn test_constants() {
 fn test_prelude_exports() {
     // Test that all important types are available in prelude
     use sparkscan_ws::prelude::*;
-    
+
     // This should compile without errors, proving all types are exported
     let _client: Option<SparkScanWsClient> = None;
     let _config: Option<SparkScanWsConfig> = None;
@@ -221,16 +234,16 @@ fn test_prelude_exports() {
 async fn test_async_operations() {
     // Test async creation of subscriptions
     let client = SparkScanWsClient::new("ws://localhost:8000/websocket");
-    
+
     // These operations should not panic even without a real connection
     let balance_subscription = client.subscribe(Topic::Balances).await;
     assert!(balance_subscription.is_ok());
-    
+
     // Test connection operations (they won't succeed but shouldn't panic)
     let connect_result = client.connect().await;
     // Connection will likely fail but the method should be callable
     let _ = connect_result;
-    
+
     // Note: disconnect() is not supported by underlying tokio-centrifuge crate
 }
 
