@@ -18,6 +18,11 @@ name = "sparkscan-client"
 changelog_path = "crates/sparkscan-client/CHANGELOG.md"
 git_tag_name = "sparkscan-client_v{{version}}"
 
+[[package]]
+name = "sparkscan-ws"
+changelog_path = "crates/sparkscan-ws/CHANGELOG.md"
+git_tag_name = "sparkscan-ws_v{{version}}"
+
 
 [changelog]
 protect_breaking_commits = true

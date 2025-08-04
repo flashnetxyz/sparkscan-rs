@@ -1,0 +1,55 @@
+[package]
+name = "sparkscan-ws"
+description = "WebSocket client for the SparkScan API"
+version = "0.1.0"
+license = "Apache-2.0"
+edition = "2021"
+authors = ["Nejc Drobnic <nejc@flashnet.xyz>"]
+readme = "../../README.md"
+repository = "https://github.com/flashnetxyz/sparkscan-rs.git"
+homepage = "https://github.com/flashnetxyz/sparkscan-rs"
+
+[features]
+default = []
+tracing = ["dep:tracing", "dep:tracing-subscriber"]
+
+[dependencies]
+# WebSocket client
+tokio-centrifuge = "0.1.0"
+
+# Async runtime
+tokio = { version = "1.45", features = ["full"] }
+futures = "0.3.31"
+
+# Serialization
+serde = { version = "1.0.219", features = ["derive"] }
+serde_json = "1.0.140"
+
+# Date/time handling
+chrono = { version = "0.4.41", features = ["serde"] }
+
+# Error handling
+thiserror = "2.0.12"
+anyhow = "1.0.98"
+
+# Logging (optional)
+tracing = { version = "0.1.41", optional = true }
+tracing-subscriber = { version = "0.3.18", optional = true, features = ["env-filter"] }
+log = "0.4.22"
+
+# UUID support
+uuid = { version = "1.17.0", features = ["v7", "serde"] }
+
+# Regex support (required by generated code)
+regress = "0.10.3"
+
+[build-dependencies]
+typify = "0.4.2"
+serde_json = "1.0.140"
+schemars = { version = "0.8.21", features = ["derive"] }
+syn = { version = "2.0.103", features = ["full"] }
+prettyplease = "0.2.34"
+
+[dev-dependencies]
+tokio-test = "0.4.4"
+env_logger = "0.11.3"
