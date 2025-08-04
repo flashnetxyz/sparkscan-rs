@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.0](https://github.com/flashnetxyz/sparkscan-rs/compare/sparkscan-ws_v0.1.0...sparkscan-ws_v0.2.0) - 2025-08-04
+
+### Other
+
+- Replaces basic usage example with a simpler one
+- Refactors and enhances WebSocket client SDK
+- Merge remote-tracking branch 'origin/main'
+- Refactors topics and adds new subscriptions
+
 ## [0.1.0](https://github.com/flashnetxyz/sparkscan-rs/releases/tag/sparkscan-ws_v0.1.0) - 2025-08-04
 
 ### Added
