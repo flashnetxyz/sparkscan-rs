@@ -37,13 +37,13 @@ mod tests {
 
         // Test address-specific topics
         let address = "sp1abc123";
-        let topic = Topic::AddressBalance(address.to_string());
-        assert_eq!(topic.as_str(), "balances:sp1abc123");
+        let topic = Topic::BalanceAddress(address.to_string());
+        assert_eq!(topic.as_str(), "/balance/address/sp1abc123");
 
         // Test token-specific topics
         let token = "btkn1def456";
-        let topic = Topic::TokenPrice(token.to_string());
-        assert_eq!(topic.as_str(), "token_price:btkn1def456");
+        let topic = Topic::TokenPriceIdentifier(token.to_string());
+        assert_eq!(topic.as_str(), "/token_price/identifier/btkn1def456");
 
 
     }
@@ -56,17 +56,17 @@ mod tests {
         assert_eq!(Topic::from_str("transactions"), Topic::Transactions);
 
         // Test parsing address-specific topics
-        let parsed = Topic::from_str("balances:sp1abc123");
+        let parsed = Topic::from_str("/balance/address/sp1abc123");
         match parsed {
-            Topic::AddressBalance(addr) => assert_eq!(addr, "sp1abc123"),
-            _ => panic!("Expected AddressBalance"),
+            Topic::BalanceAddress(addr) => assert_eq!(addr, "sp1abc123"),
+            _ => panic!("Expected BalanceAddress"),
         }
 
         // Test parsing token-specific topics
-        let parsed = Topic::from_str("token_price:btkn1def456");
+        let parsed = Topic::from_str("/token_price/identifier/btkn1def456");
         match parsed {
-            Topic::TokenPrice(token) => assert_eq!(token, "btkn1def456"),
-            _ => panic!("Expected TokenPrice"),
+            Topic::TokenPriceIdentifier(token) => assert_eq!(token, "btkn1def456"),
+            _ => panic!("Expected TokenPriceIdentifier"),
         }
 
         // Test that unknown topics panic (strictly typed)

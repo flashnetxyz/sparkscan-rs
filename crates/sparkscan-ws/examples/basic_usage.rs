@@ -164,7 +164,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!("\nSubscribing to balance updates for specific address: {}", specific_address);
     
     let address_balance_subscription = client.subscribe(
-        Topic::AddressBalance(specific_address.to_string())
+        Topic::BalanceAddress(specific_address.to_string())
     ).await?;
     
     address_balance_subscription.on_subscribed(|| {
@@ -186,6 +186,87 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     });
 
     address_balance_subscription.subscribe();
+
+    // Example 5: Subscribe to mainnet balance updates only
+    println!("\nSubscribing to mainnet balance updates...");
+    let mainnet_balance_subscription = client.subscribe(
+        Topic::BalanceNetwork("mainnet".to_string())
+    ).await?;
+    
+    mainnet_balance_subscription.on_subscribed(|| {
+        println!("Subscribed to mainnet balance updates");
+    });
+
+    mainnet_balance_subscription.on_message(|message| {
+        match message {
+            SparkScanMessage::Balance(balance) => {
+                println!("Mainnet Balance Update:");
+                println!("   Address: {}", balance.address);
+                println!("   Balance: {} sats", balance.soft_balance);
+            }
+            _ => {
+                println!("Received unexpected message type for mainnet balance subscription");
+            }
+        }
+    });
+
+    mainnet_balance_subscription.subscribe();
+
+    // Example 6: Subscribe to incoming transactions for a specific network and address
+    println!("\nSubscribing to incoming transactions for mainnet address...");
+    let tx_in_subscription = client.subscribe(
+        Topic::TransactionIn("mainnet".to_string(), specific_address.to_string())
+    ).await?;
+    
+    tx_in_subscription.on_subscribed(|| {
+        println!("Subscribed to incoming transaction updates");
+    });
+
+    tx_in_subscription.on_message(|message| {
+        match message {
+            SparkScanMessage::Transaction(tx) => {
+                println!("Incoming Transaction:");
+                println!("   ID: {}", tx.id);
+                println!("   From: {:?}", tx.from_identifier);
+                if let Some(amount) = &tx.amount_sats {
+                    println!("   Amount: {} sats", amount);
+                }
+            }
+            _ => {
+                println!("Received unexpected message type for incoming transaction subscription");
+            }
+        }
+    });
+
+    tx_in_subscription.subscribe();
+
+    // Example 7: Subscribe to outgoing transactions to Lightning Network
+    println!("\nSubscribing to Lightning Network outgoing transactions...");
+    let tx_out_lightning_subscription = client.subscribe(
+        Topic::TransactionOut("mainnet".to_string(), "lightning".to_string())
+    ).await?;
+    
+    tx_out_lightning_subscription.on_subscribed(|| {
+        println!("Subscribed to Lightning Network outgoing transactions");
+    });
+
+    tx_out_lightning_subscription.on_message(|message| {
+        match message {
+            SparkScanMessage::Transaction(tx) => {
+                println!("Lightning Outgoing Transaction:");
+                println!("   ID: {}", tx.id);
+                println!("   To: {:?}", tx.to_identifier);
+                if let Some(amount) = &tx.amount_sats {
+                    println!("   Amount: {} sats", amount);
+                }
+            }
+            _ => {
+                println!("Received unexpected message type for Lightning outgoing transaction subscription");
+            }
+        }
+    });
+
+    tx_out_lightning_subscription.subscribe();
 
     // Set up error handlers for subscriptions
     balance_subscription.on_error(|err| {
@@ -219,6 +300,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     token_price_subscription.unsubscribe();
     transaction_subscription.unsubscribe();
     address_balance_subscription.unsubscribe();
+    mainnet_balance_subscription.unsubscribe();
+    tx_in_subscription.unsubscribe();
+    tx_out_lightning_subscription.unsubscribe();
 
     println!("Shutdown complete!");
     Ok(())

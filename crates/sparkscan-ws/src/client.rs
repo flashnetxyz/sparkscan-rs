@@ -255,7 +255,7 @@ impl SparkScanWsClient {
     /// 
     /// // Address-specific balance updates
     /// let address_balance = client.subscribe(
-    ///     Topic::AddressBalance("sp1abc123...".to_string())
+    ///     Topic::BalanceAddress("sp1abc123...".to_string())
     /// ).await?;
     /// 
     /// // Token price feed

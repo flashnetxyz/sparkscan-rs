@@ -44,16 +44,23 @@ fn test_topic_enum_completeness() {
     // Test all topic variants
     let topics = vec![
         Topic::Balances,
-        Topic::AddressBalance("sp1test".to_string()),
+        Topic::BalanceNetwork("mainnet".to_string()),
+        Topic::BalanceAddress("sp1test".to_string()),
         Topic::TokenBalances,
-        Topic::AddressTokenBalance("sp1test".to_string()),
-        Topic::TokenBalance("btkn1test".to_string()),
+        Topic::TokenBalanceNetwork("mainnet".to_string()),
+        Topic::TokenBalanceIdentifier("btkn1test".to_string()),
+        Topic::TokenBalanceAddress("sp1test".to_string()),
         Topic::TokenPrices,
-        Topic::TokenPrice("btkn1test".to_string()),
+        Topic::TokenPriceNetwork("mainnet".to_string()),
+        Topic::TokenPriceIdentifier("btkn1test".to_string()),
         Topic::Tokens,
-        Topic::Token("btkn1test".to_string()),
+        Topic::TokenIdentifier("btkn1test".to_string()),
+        Topic::TokenNetwork("mainnet".to_string()),
+        Topic::TokenIssuer("sp1issuer".to_string()),
         Topic::Transactions,
-        Topic::AddressTransactions("sp1test".to_string()),
+        Topic::TransactionNetwork("mainnet".to_string()),
+        Topic::TransactionIn("mainnet".to_string(), "sp1test".to_string()),
+        Topic::TransactionOut("mainnet".to_string(), "bitcoin".to_string()),
     ];
 
     for topic in topics {
@@ -184,12 +191,10 @@ fn test_error_types() {
 
 #[test]
 fn test_constants() {
-    use sparkscan_ws::{VERSION, DEFAULT_MAINNET_URL, DEFAULT_REGTEST_URL};
+    use sparkscan_ws::{VERSION, DEFAULT_MAINNET_URL};
     
     assert!(!VERSION.is_empty());
-    assert!(DEFAULT_MAINNET_URL.starts_with("wss://"));
-    assert!(DEFAULT_REGTEST_URL.starts_with("wss://"));
-    assert_ne!(DEFAULT_MAINNET_URL, DEFAULT_REGTEST_URL);
+    assert!(DEFAULT_MAINNET_URL.starts_with("ws://"));
 }
 
 #[test]

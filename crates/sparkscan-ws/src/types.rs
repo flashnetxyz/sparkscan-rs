@@ -62,26 +62,44 @@ impl SparkScanMessage {
 pub enum Topic {
     /// Balance updates for all addresses
     Balances,
+    /// Balance updates filtered by network
+    BalanceNetwork(String),
     /// Balance updates for a specific address
-    AddressBalance(String),
-    /// Token balance updates
+    BalanceAddress(String),
+    
+    /// Token balance updates for all
     TokenBalances,
+    /// Token balance updates filtered by network
+    TokenBalanceNetwork(String),
+    /// Token balance updates for a specific token identifier
+    TokenBalanceIdentifier(String),
     /// Token balance updates for a specific address
-    AddressTokenBalance(String),
-    /// Token balance updates for a specific token
-    TokenBalance(String),
-    /// Token price updates
+    TokenBalanceAddress(String),
+    
+    /// Token price updates for all
     TokenPrices,
-    /// Token price updates for a specific token
-    TokenPrice(String),
-    /// Token information updates
-    Tokens,
-    /// Token information for a specific token
-    Token(String),
-    /// Transaction updates
+    /// Token price updates filtered by network
+    TokenPriceNetwork(String),
+    /// Token price updates for a specific token identifier
+    TokenPriceIdentifier(String),
+    
+    /// Transaction updates for all
     Transactions,
-    /// Transaction updates for a specific address
-    AddressTransactions(String),
+    /// Transaction updates filtered by network
+    TransactionNetwork(String),
+    /// Incoming transaction updates for network and field (address/bitcoin/lightning)
+    TransactionIn(String, String),
+    /// Outgoing transaction updates for network and field (address/bitcoin/lightning)
+    TransactionOut(String, String),
+    
+    /// Token information updates for all
+    Tokens,
+    /// Token information for a specific token identifier
+    TokenIdentifier(String),
+    /// Token information filtered by network
+    TokenNetwork(String),
+    /// Token information filtered by issuer
+    TokenIssuer(String),
 }
 
 impl Topic {
@@ -89,42 +107,81 @@ impl Topic {
     pub fn as_str(&self) -> String {
         match self {
             Topic::Balances => "balances".to_string(),
-            Topic::AddressBalance(address) => format!("balances:{}", address),
+            Topic::BalanceNetwork(network) => format!("/balance/network/{}", network),
+            Topic::BalanceAddress(address) => format!("/balance/address/{}", address),
+            
             Topic::TokenBalances => "token_balances".to_string(),
-            Topic::AddressTokenBalance(address) => format!("token_balances:{}", address),
-            Topic::TokenBalance(token) => format!("token_balance:{}", token),
+            Topic::TokenBalanceNetwork(network) => format!("/token_balance/network/{}", network),
+            Topic::TokenBalanceIdentifier(identifier) => format!("/token_balance/identifier/{}", identifier),
+            Topic::TokenBalanceAddress(address) => format!("/token_balance/address/{}", address),
+            
             Topic::TokenPrices => "token_prices".to_string(),
-            Topic::TokenPrice(token) => format!("token_price:{}", token),
-            Topic::Tokens => "tokens".to_string(),
-            Topic::Token(token) => format!("token:{}", token),
+            Topic::TokenPriceNetwork(network) => format!("/token_price/network/{}", network),
+            Topic::TokenPriceIdentifier(identifier) => format!("/token_price/identifier/{}", identifier),
+            
             Topic::Transactions => "transactions".to_string(),
-            Topic::AddressTransactions(address) => format!("transactions:{}", address),
+            Topic::TransactionNetwork(network) => format!("/transaction/network/{}", network),
+            Topic::TransactionIn(network, field) => format!("/transaction/in/{}/{}", network, field),
+            Topic::TransactionOut(network, field) => format!("/transaction/out/{}/{}", network, field),
+            
+            Topic::Tokens => "tokens".to_string(),
+            Topic::TokenIdentifier(identifier) => format!("/token/identifier/{}", identifier),
+            Topic::TokenNetwork(network) => format!("/token/network/{}", network),
+            Topic::TokenIssuer(issuer) => format!("/token/issuer/{}", issuer),
         }
     }
 
     /// Parse a topic string into a Topic enum.
     pub fn from_str(topic: &str) -> Self {
-        if let Some(address) = topic.strip_prefix("balances:") {
-            Topic::AddressBalance(address.to_string())
-        } else if let Some(address) = topic.strip_prefix("token_balances:") {
-            Topic::AddressTokenBalance(address.to_string())
-        } else if let Some(token) = topic.strip_prefix("token_balance:") {
-            Topic::TokenBalance(token.to_string())
-        } else if let Some(token) = topic.strip_prefix("token_price:") {
-            Topic::TokenPrice(token.to_string())
-        } else if let Some(token) = topic.strip_prefix("token:") {
-            Topic::Token(token.to_string())
-        } else if let Some(address) = topic.strip_prefix("transactions:") {
-            Topic::AddressTransactions(address.to_string())
-        } else {
-            match topic {
-                "balances" => Topic::Balances,
-                "token_balances" => Topic::TokenBalances,
-                "token_prices" => Topic::TokenPrices,
-                "tokens" => Topic::Tokens,
-                "transactions" => Topic::Transactions,
-                _ => panic!("Unknown topic: {}. Only predefined topics are supported.", topic),
+        // Handle basic topics first
+        match topic {
+            "balances" => return Topic::Balances,
+            "token_balances" => return Topic::TokenBalances,
+            "token_prices" => return Topic::TokenPrices,
+            "transactions" => return Topic::Transactions,
+            "tokens" => return Topic::Tokens,
+            _ => {}
+        }
+        
+        // Handle path-based topics
+        if let Some(rest) = topic.strip_prefix("/balance/network/") {
+            Topic::BalanceNetwork(rest.to_string())
+        } else if let Some(rest) = topic.strip_prefix("/balance/address/") {
+            Topic::BalanceAddress(rest.to_string())
+        } else if let Some(rest) = topic.strip_prefix("/token_balance/network/") {
+            Topic::TokenBalanceNetwork(rest.to_string())
+        } else if let Some(rest) = topic.strip_prefix("/token_balance/identifier/") {
+            Topic::TokenBalanceIdentifier(rest.to_string())
+        } else if let Some(rest) = topic.strip_prefix("/token_balance/address/") {
+            Topic::TokenBalanceAddress(rest.to_string())
+        } else if let Some(rest) = topic.strip_prefix("/token_price/network/") {
+            Topic::TokenPriceNetwork(rest.to_string())
+        } else if let Some(rest) = topic.strip_prefix("/token_price/identifier/") {
+            Topic::TokenPriceIdentifier(rest.to_string())
+        } else if let Some(rest) = topic.strip_prefix("/transaction/network/") {
+            Topic::TransactionNetwork(rest.to_string())
+        } else if let Some(rest) = topic.strip_prefix("/transaction/in/") {
+            let parts: Vec<&str> = rest.splitn(2, '/').collect();
+            if parts.len() == 2 {
+                Topic::TransactionIn(parts[0].to_string(), parts[1].to_string())
+            } else {
+                panic!("Invalid transaction in topic format: {}. Expected /transaction/in/network/field", topic);
             }
+        } else if let Some(rest) = topic.strip_prefix("/transaction/out/") {
+            let parts: Vec<&str> = rest.splitn(2, '/').collect();
+            if parts.len() == 2 {
+                Topic::TransactionOut(parts[0].to_string(), parts[1].to_string())
+            } else {
+                panic!("Invalid transaction out topic format: {}. Expected /transaction/out/network/field", topic);
+            }
+        } else if let Some(rest) = topic.strip_prefix("/token/identifier/") {
+            Topic::TokenIdentifier(rest.to_string())
+        } else if let Some(rest) = topic.strip_prefix("/token/network/") {
+            Topic::TokenNetwork(rest.to_string())
+        } else if let Some(rest) = topic.strip_prefix("/token/issuer/") {
+            Topic::TokenIssuer(rest.to_string())
+        } else {
+            panic!("Unknown topic: {}. Only predefined topics are supported.", topic);
         }
     }
 }
@@ -162,23 +219,23 @@ pub fn parse_message_for_topic(topic: &Topic, data: &[u8]) -> crate::error::Resu
     };
 
     match topic {
-        Topic::Balances | Topic::AddressBalance(_) => {
+        Topic::Balances | Topic::BalanceNetwork(_) | Topic::BalanceAddress(_) => {
             let payload: BalancePayload = serde_json::from_value(payload_data)?;
             Ok(SparkScanMessage::Balance(payload))
         }
-        Topic::TokenBalances | Topic::AddressTokenBalance(_) | Topic::TokenBalance(_) => {
+        Topic::TokenBalances | Topic::TokenBalanceNetwork(_) | Topic::TokenBalanceIdentifier(_) | Topic::TokenBalanceAddress(_) => {
             let payload: TokenBalancePayload = serde_json::from_value(payload_data)?;
             Ok(SparkScanMessage::TokenBalance(payload))
         }
-        Topic::TokenPrices | Topic::TokenPrice(_) => {
+        Topic::TokenPrices | Topic::TokenPriceNetwork(_) | Topic::TokenPriceIdentifier(_) => {
             let payload: TokenPricePayload = serde_json::from_value(payload_data)?;
             Ok(SparkScanMessage::TokenPrice(payload))
         }
-        Topic::Tokens | Topic::Token(_) => {
+        Topic::Tokens | Topic::TokenIdentifier(_) | Topic::TokenNetwork(_) | Topic::TokenIssuer(_) => {
             let payload: TokenPayload = serde_json::from_value(payload_data)?;
             Ok(SparkScanMessage::Token(payload))
         }
-        Topic::Transactions | Topic::AddressTransactions(_) => {
+        Topic::Transactions | Topic::TransactionNetwork(_) | Topic::TransactionIn(_, _) | Topic::TransactionOut(_, _) => {
             let payload: TransactionPayload = serde_json::from_value(payload_data)?;
             Ok(SparkScanMessage::Transaction(payload))
         }
@@ -191,21 +248,78 @@ mod tests {
 
     #[test]
     fn test_topic_parsing() {
+        // Basic topics
         assert_eq!(Topic::from_str("balances"), Topic::Balances);
-        assert_eq!(
-            Topic::from_str("balances:sp1abc123"),
-            Topic::AddressBalance("sp1abc123".to_string())
-        );
         assert_eq!(Topic::from_str("token_balances"), Topic::TokenBalances);
+        assert_eq!(Topic::from_str("token_prices"), Topic::TokenPrices);
+        assert_eq!(Topic::from_str("transactions"), Topic::Transactions);
+        assert_eq!(Topic::from_str("tokens"), Topic::Tokens);
+        
+        // Balance topics
+        assert_eq!(
+            Topic::from_str("/balance/network/mainnet"),
+            Topic::BalanceNetwork("mainnet".to_string())
+        );
+        assert_eq!(
+            Topic::from_str("/balance/address/sp1abc123"),
+            Topic::BalanceAddress("sp1abc123".to_string())
+        );
+        
+        // Token balance topics
+        assert_eq!(
+            Topic::from_str("/token_balance/network/mainnet"),
+            Topic::TokenBalanceNetwork("mainnet".to_string())
+        );
+        assert_eq!(
+            Topic::from_str("/token_balance/identifier/btkn1xyz"),
+            Topic::TokenBalanceIdentifier("btkn1xyz".to_string())
+        );
+        assert_eq!(
+            Topic::from_str("/token_balance/address/sp1def456"),
+            Topic::TokenBalanceAddress("sp1def456".to_string())
+        );
+        
+        // Transaction topics
+        assert_eq!(
+            Topic::from_str("/transaction/in/mainnet/sp1abc123"),
+            Topic::TransactionIn("mainnet".to_string(), "sp1abc123".to_string())
+        );
+        assert_eq!(
+            Topic::from_str("/transaction/out/mainnet/bitcoin"),
+            Topic::TransactionOut("mainnet".to_string(), "bitcoin".to_string())
+        );
     }
 
     #[test]
     fn test_topic_to_string() {
+        // Basic topics
         assert_eq!(Topic::Balances.as_str(), "balances");
-        assert_eq!(
-            Topic::AddressBalance("sp1abc123".to_string()).as_str(),
-            "balances:sp1abc123"
-        );
         assert_eq!(Topic::TokenBalances.as_str(), "token_balances");
+        
+        // Balance topics  
+        assert_eq!(
+            Topic::BalanceNetwork("mainnet".to_string()).as_str(),
+            "/balance/network/mainnet"
+        );
+        assert_eq!(
+            Topic::BalanceAddress("sp1abc123".to_string()).as_str(),
+            "/balance/address/sp1abc123"
+        );
+        
+        // Token balance topics
+        assert_eq!(
+            Topic::TokenBalanceIdentifier("btkn1xyz".to_string()).as_str(),
+            "/token_balance/identifier/btkn1xyz"
+        );
+        
+        // Transaction topics
+        assert_eq!(
+            Topic::TransactionIn("mainnet".to_string(), "sp1abc123".to_string()).as_str(),
+            "/transaction/in/mainnet/sp1abc123"
+        );
+        assert_eq!(
+            Topic::TransactionOut("mainnet".to_string(), "lightning".to_string()).as_str(),
+            "/transaction/out/mainnet/lightning"
+        );
     }
 }

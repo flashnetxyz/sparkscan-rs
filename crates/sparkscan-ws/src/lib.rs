@@ -64,10 +64,10 @@
 //! ```rust,no_run
 //! # use sparkscan_ws::Topic;
 //! // Address-specific balance subscription
-//! let topic = Topic::AddressBalance("sp1abc123...".to_string());
+//! let topic = Topic::BalanceAddress("sp1abc123...".to_string());
 //! 
 //! // Token-specific price subscription
-//! let topic = Topic::TokenPrice("btkn1def456...".to_string());
+//! let topic = Topic::TokenPriceIdentifier("btkn1def456...".to_string());
 //! ```
 //! 
 //! ## Message Processing
@@ -171,11 +171,8 @@ pub use types::{
 /// The current version of the SparkScan WebSocket SDK.
 pub const VERSION: &str = env!("CARGO_PKG_VERSION");
 
-/// Default WebSocket URL for SparkScan mainnet.
-pub const DEFAULT_MAINNET_URL: &str = "wss://ws.sparkscan.io/connection/websocket";
-
-/// Default WebSocket URL for SparkScan regtest.
-pub const DEFAULT_REGTEST_URL: &str = "wss://regtest-ws.sparkscan.io/connection/websocket";
+/// Default WebSocket URL for SparkScan.
+pub const DEFAULT_MAINNET_URL: &str = "ws://updates.sparkscan.io/";
 
 /// Prelude module for convenient type imports.
 /// 
@@ -216,7 +213,6 @@ mod tests {
 
     #[test] 
     fn test_default_urls() {
-        assert!(DEFAULT_MAINNET_URL.starts_with("wss://"));
-        assert!(DEFAULT_REGTEST_URL.starts_with("wss://"));
+        assert!(DEFAULT_MAINNET_URL.starts_with("ws://"));
     }
 }
