@@ -31,7 +31,7 @@
                 "TESTNET",
                 "SIGNET",
                 "REGTEST",
-                "LOCAL"
+                "LOADTEST"
             ],
             "examples": [
                 "MAINNET"
@@ -40,6 +40,15 @@
             "type": "string"
         },
         "type": {
+            "enum": [
+                "token_multi_transfer",
+                "bitcoin_to_spark",
+                "lightning_to_spark",
+                "spark_to_bitcoin",
+                "spark_to_lightning",
+                "spark_to_spark",
+                "unknown"
+            ],
             "examples": [
                 "spark_to_lightning",
                 "lightning_to_spark",
@@ -49,6 +58,13 @@
             "type": "string"
         },
         "status": {
+            "enum": [
+                "confirmed",
+                "pending",
+                "sent",
+                "failed",
+                "expired"
+            ],
             "examples": [
                 "confirmed",
                 "pending",
@@ -88,6 +104,7 @@
                 "Lightning Network",
                 "Unknown"
             ],
+            "pattern": "^((sp|spt|sprt|sps|spl)[0-9][qpzry9x8gf2tvdw0s3jn54khce6mua7l]{60,}|Bitcoin|Lightning Network|Unknown)$",
             "title": "From Identifier",
             "type": "string"
         },
@@ -100,6 +117,7 @@
                 "Lightning Network",
                 "Unknown"
             ],
+            "pattern": "^((sp|spt|sprt|sps|spl)[0-9][qpzry9x8gf2tvdw0s3jn54khce6mua7l]{60,}|Bitcoin|Lightning Network|Unknown)$",
             "title": "To Identifier",
             "type": "string"
         },

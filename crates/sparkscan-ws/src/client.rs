@@ -130,7 +130,7 @@ impl SparkScanWsConfig {
 ///     let subscription = client.subscribe(Topic::Balances).await?;
 ///     subscription.on_message(|message| {
 ///         if let SparkScanMessage::Balance(balance) = message {
-///             println!("Balance update: {} sats for {}", balance.soft_balance, balance.address);
+///             println!("Balance update: {} sats for {:?}", balance.soft_balance, balance.address);
 ///         }
 ///     });
 ///     subscription.subscribe();

@@ -21,6 +21,7 @@
                 "btkn1daywtenlww42njymqzyegvcwuy3p9f26zknme0srxa7tagewvuys86h553",
                 "btkn1f0wpf28xhs6sswxkthx9fzrv2x9476yk95wlucp4sfuqmxnu8zesv2gsws"
             ],
+            "pattern": "^(btkn|btknt|btknrt|btkns|btknl)[0-9][qpzry9x8gf2tvdw0s3jn54khce6mua7l]{55,}$",
             "title": "Address",
             "type": "string"
         },
@@ -30,7 +31,7 @@
                 "TESTNET",
                 "SIGNET",
                 "REGTEST",
-                "LOCAL"
+                "LOADTEST"
             ],
             "examples": [
                 "MAINNET"

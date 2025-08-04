@@ -91,23 +91,23 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             match message {
                 SparkScanMessage::Balance(balance) => {
                     println!("  Type: Balance Update");
-                    println!("  Address: {}", balance.address);
+                    println!("  Address: {:?}", balance.address);
                     println!("  Soft Balance: {} sats", balance.soft_balance);
                     println!("  Hard Balance: {} sats", balance.hard_balance);
-                    println!("  Network: {}", balance.network);
+                    println!("  Network: {:?}", balance.network);
                     println!("  Processed At: {}", balance.processed_at);
                 }
                 SparkScanMessage::TokenBalance(token_balance) => {
                     println!("  Type: Token Balance Update");
-                    println!("  Address: {}", token_balance.address);
-                    println!("  Token Address: {}", token_balance.token_address);
+                    println!("  Address: {:?}", token_balance.address);
+                    println!("  Token Address: {:?}", token_balance.token_address);
                     println!("  Balance: {}", token_balance.balance);
-                    println!("  Network: {}", token_balance.network);
+                    println!("  Network: {:?}", token_balance.network);
                     println!("  Processed At: {}", token_balance.processed_at);
                 }
                 SparkScanMessage::TokenPrice(price) => {
                     println!("  Type: Token Price Update");
-                    println!("  Token Address: {}", price.address);
+                    println!("  Token Address: {:?}", price.address);
                     println!("  Price: {:?} sats", price.price_sats);
                     println!("  Protocol: {:?}", price.protocol);
                     println!("  Network: {:?}", price.network);
@@ -115,11 +115,11 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 }
                 SparkScanMessage::Token(token) => {
                     println!("  Type: Token Update");
-                    println!("  Address: {}", token.address);
+                    println!("  Address: {:?}", token.address);
                     println!("  Ticker: {}", token.ticker);
                     println!("  Name: {}", token.name);
                     println!("  Decimals: {}", token.decimals);
-                    println!("  Network: {}", token.network);
+                    println!("  Network: {:?}", token.network);
                     if let Some(calculated_at) = token.calculated_at {
                         println!("  Calculated At: {}", calculated_at);
                     }
@@ -127,16 +127,16 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 SparkScanMessage::Transaction(tx) => {
                     println!("  Type: Transaction Update");
                     println!("  ID: {}", tx.id);
-                    println!("  Type: {}", tx.type_);
-                    println!("  Status: {}", tx.status);
+                    println!("  Type: {:?}", tx.type_);
+                    println!("  Status: {:?}", tx.status);
                     if let Some(amount) = &tx.amount_sats {
                         println!("  Amount: {} sats", amount);
                     }
                     if let Some(from) = &tx.from_identifier {
-                        println!("  From: {}", from);
+                        println!("  From: {:?}", from);
                     }
                     if let Some(to) = &tx.to_identifier {
-                        println!("  To: {}", to);
+                        println!("  To: {:?}", to);
                     }
                     println!("  Network: {:?}", tx.network);
                     println!("  Processed At: {}", tx.processed_at);

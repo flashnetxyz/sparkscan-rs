@@ -41,7 +41,7 @@
 //!     subscription.on_message(|message| {
 //!         match message {
 //!             SparkScanMessage::Balance(balance) => {
-//!                 println!("Balance update: {} sats for address {}",
+//!                 println!("Balance update: {} sats for address {:?}",
 //!                          balance.soft_balance, balance.address);
 //!             }
 //!             _ => println!("Unexpected message type received"),
@@ -91,7 +91,7 @@
 //!     match message {
 //!         SparkScanMessage::Balance(balance) => {
 //!             // Process real-time balance update
-//!             println!("Address: {}", balance.address);
+//!             println!("Address: {:?}", balance.address);
 //!             println!("Soft Balance: {} sats", balance.soft_balance);
 //!             println!("Hard Balance: {} sats", balance.hard_balance);
 //!             println!("Network: {}", balance.network);
@@ -106,7 +106,7 @@
 //!         }
 //!         SparkScanMessage::TokenPrice(price) => {
 //!             // Process real-time price update
-//!             println!("Token: {}", price.address);
+//!             println!("Token: {:?}", price.address);
 //!             println!("Price: {:?} sats", price.price_sats);
 //!             println!("Protocol: {:?}", price.protocol);
 //!         }
