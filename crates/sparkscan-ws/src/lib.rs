@@ -173,7 +173,7 @@ pub use types::{SparkScanMessage, Topic};
 
 // Re-export generated types
 pub use types::{
-    BalancePayload, TokenBalancePayload, TokenPayload, TokenPricePayload, TransactionPayload,
+    Type, BalancePayload, TokenBalancePayload, TokenPayload, TokenPricePayload, TransactionPayload,
 };
 
 /// The current version of the SparkScan WebSocket SDK.
