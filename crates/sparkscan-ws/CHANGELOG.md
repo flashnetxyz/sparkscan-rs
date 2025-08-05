@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.1](https://github.com/flashnetxyz/sparkscan-rs/compare/sparkscan-ws_v0.3.0...sparkscan-ws_v0.3.1) - 2025-08-05
+
+### Added
+
+- *(sparkscan-ws)* add Type enum to public re-exports
+
 ## [0.3.0](https://github.com/flashnetxyz/sparkscan-rs/compare/sparkscan-ws_v0.2.0...sparkscan-ws_v0.3.0) - 2025-08-04
 
 ### Other
