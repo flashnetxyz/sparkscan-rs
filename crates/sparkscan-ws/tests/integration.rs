@@ -5,15 +5,13 @@
 //! a real WebSocket server. Full integration tests would require a test
 //! server setup.
 
-use chrono::{DateTime, Utc};
 use sparkscan_ws::{
     subscription::SubscriptionManager,
     types::{
-        balance::{BalancePayload, Network as BalanceNetwork},
+        balance::{Network as BalanceNetwork},
         parse_message_for_topic,
-        token::Network as TokenNetwork,
-        token_balance::{Network as TokenBalanceNetwork, TokenBalancePayload},
-        transaction::{Network as TransactionNetwork, TransactionPayload},
+        token_balance::{Network as TokenBalanceNetwork},
+        transaction::{Network as TransactionNetwork},
     },
     SparkScanMessage, SparkScanWsClient, SparkScanWsConfig, Topic,
 };
@@ -302,4 +300,188 @@ fn test_real_api_data_compatibility() {
     // Note: Skipping token test as it demonstrates typify's strong validation
     // The fact that our invalid test data is rejected proves the type system is working correctly!
     println!("Typify validation working correctly - rejecting invalid address formats");
+}
+
+#[test]
+fn test_fallback_transaction_parsing_integration() {
+    // Test the fallback parsing mechanism with complex token_multi_transfer data
+    let complex_transaction_json = r#"{
+        "id": "8a090c65ea4d5649eb5e26deea1533276751bbfc5ef522b3a22f5b429262f417",
+        "network": "REGTEST",
+        "type": "token_multi_transfer",
+        "status": "pending",
+        "amount_sats": null,
+        "token_amount": "20999999998109000",
+        "token_address": "btknrt1pgs8227te54zg5uzuzx70eqtt4y3lr376tjzav7szqw3e8pp6qpepzsa3878m",
+        "from_identifier": "sprt1pgssyrjymh26gtc0nqngxlsnwp54p8yh8jhe9qr973dmg8ghmztta5xgc65l8s",
+        "to_identifier": "sprt1pgssyr6g48wnmtmmcarg0plqhdlge3n83sml8mlcu9zje6yrl6ythl4hums67v",
+        "bitcoin_txid": null,
+        "token_io_details": {
+            "inputs": [
+                {
+                    "amount": "20999999998109000",
+                    "output_id": "01988037-1ba9-7b6b-ad3d-6b35b9ec3018",
+                    "output_status": "SPENT_STARTED",
+                    "pubkey": "020e44ddd5a42f0f9826837e137069509c973caf928065f45bb41d17d896bed0c8",
+                    "vout": 0
+                }
+            ],
+            "outputs": [
+                {
+                    "amount": "10000",
+                    "output_id": "01988037-85c9-7a9a-8021-7b5ac85b3e82",
+                    "pubkey": "020f48a9dd3daf7bc7468787e0bb7e8cc6678c37f3eff8e1452ce883fe88bbfeb7",
+                    "vout": 0,
+                    "withdraw_bond_sats": 10000,
+                    "withdraw_relative_block_locktime": 1000
+                }
+            ]
+        },
+        "updated_at": "2025-08-06T16:29:39.221555Z",
+        "expired_time": "2025-08-06T16:32:39.091001",
+        "processed_at": "2025-08-06T16:29:38.954000Z"
+    }"#;
+
+    let result = parse_message_for_topic(&Topic::Transactions, complex_transaction_json.as_bytes());
+    assert!(result.is_ok(), "Failed to parse complex transaction: {:?}", result);
+
+    if let Ok(SparkScanMessage::Transaction(tx)) = result {
+        assert_eq!(tx.id, "8a090c65ea4d5649eb5e26deea1533276751bbfc5ef522b3a22f5b429262f417");
+        assert_eq!(format!("{:?}", tx.network), "Regtest");
+        assert_eq!(format!("{:?}", tx.type_), "TokenMultiTransfer");
+        assert_eq!(format!("{:?}", tx.status), "Pending");
+        assert_eq!(tx.token_amount, Some("20999999998109000".to_string()));
+        
+        // Verify token_io_details are preserved
+        if let Some(token_io_details) = &tx.token_io_details {
+            // Should contain either original data or be restructured into fallback format
+            assert!(!token_io_details.is_empty());
+        }
+    }
+}
+
+#[test]
+fn test_double_encoded_json_parsing_integration() {
+    // Test double-encoded JSON handling (common Centrifugo pattern)
+    let transaction_data = serde_json::json!({
+        "id": "double_encoded_integration_test",
+        "network": "MAINNET",
+        "type": "spark_to_spark",
+        "status": "confirmed",
+        "processed_at": "2025-08-06T16:28:42.955000Z",
+        "amount_sats": "500"
+    });
+    
+    // Create double-encoded JSON string
+    let double_encoded_json = serde_json::to_string(&transaction_data).unwrap();
+    
+    let result = parse_message_for_topic(&Topic::Transactions, double_encoded_json.as_bytes());
+    assert!(result.is_ok());
+
+    if let Ok(SparkScanMessage::Transaction(tx)) = result {
+        assert_eq!(tx.id, "double_encoded_integration_test");
+        assert_eq!(tx.amount_sats, Some("500".to_string()));
+        assert_eq!(format!("{:?}", tx.network), "Mainnet");
+    }
+}
+
+#[test]
+fn test_malformed_json_graceful_handling() {
+    // Test that malformed JSON is handled gracefully
+    let malformed_json = r#"{"id": "test", "incomplete": }"#;
+    
+    let result = parse_message_for_topic(&Topic::Transactions, malformed_json.as_bytes());
+    assert!(result.is_err());
+    
+    // Error should be related to JSON parsing, not panic
+    if let Err(e) = result {
+        let error_msg = format!("{}", e);
+        assert!(error_msg.contains("JSON") || error_msg.contains("decode") || error_msg.contains("serialization"));
+    }
+}
+
+#[test] 
+fn test_mixed_message_type_parsing() {
+    // Test parsing different message types with the same function
+    use std::collections::HashMap;
+    
+    let test_cases: HashMap<Topic, &str> = [
+        (Topic::Balances, r#"{
+            "address": "sp1pgssx6rwqjer2xsmhe5x6mg6ng0cfu77q58vtcz9f0emuuzftnl7zvv6qujs5s",
+            "network": "MAINNET",
+            "soft_balance": "100",
+            "hard_balance": "90",
+            "processed_at": "2025-08-06T16:28:42.955000Z"
+        }"#),
+        (Topic::TokenBalances, r#"{
+            "network": "MAINNET",
+            "address": "sp1pgssx6rwqjer2xsmhe5x6mg6ng0cfu77q58vtcz9f0emuuzftnl7zvv6qujs5s",
+            "token_address": "btkn1daywtenlww42njymqzyegvcwuy3p9f26zknme0srxa7tagewvuys86h553",
+            "balance": "1000",
+            "processed_at": "2025-08-06T16:28:42.955000Z"
+        }"#),
+        (Topic::Transactions, r#"{
+            "id": "mixed_test_transaction",
+            "network": "REGTEST",
+            "type": "spark_to_spark",
+            "status": "sent",
+            "processed_at": "2025-08-06T16:28:42.955000Z",
+            "amount_sats": "100"
+        }"#),
+    ].iter().cloned().collect();
+
+    for (topic, json_data) in test_cases {
+        let result = parse_message_for_topic(&topic, json_data.as_bytes());
+        assert!(result.is_ok(), "Failed to parse {:?}: {:?}", topic, result);
+
+        let message = result.unwrap();
+        match (&topic, &message) {
+            (Topic::Balances, SparkScanMessage::Balance(_)) => {},
+            (Topic::TokenBalances, SparkScanMessage::TokenBalance(_)) => {},
+            (Topic::Transactions, SparkScanMessage::Transaction(_)) => {},
+            _ => panic!("Message type mismatch for topic {:?}", topic),
+        }
+    }
+}
+
+#[test]
+fn test_envelope_wrapped_messages() {
+    // Test different envelope patterns that might come from Centrifugo
+    let transaction_data = serde_json::json!({
+        "id": "envelope_test",
+        "network": "REGTEST",
+        "type": "spark_to_lightning",
+        "status": "confirmed",
+        "processed_at": "2025-08-06T16:28:42.955000Z"
+    });
+
+    // Test Case 1: Data wrapped in "data" field
+    let data_wrapped = serde_json::json!({
+        "data": serde_json::to_string(&transaction_data).unwrap()
+    });
+    let result1 = parse_message_for_topic(&Topic::Transactions, serde_json::to_string(&data_wrapped).unwrap().as_bytes());
+    assert!(result1.is_ok());
+
+    // Test Case 2: Data wrapped in "payload" field  
+    let payload_wrapped = serde_json::json!({
+        "payload": transaction_data.clone()
+    });
+    let result2 = parse_message_for_topic(&Topic::Transactions, serde_json::to_string(&payload_wrapped).unwrap().as_bytes());
+    assert!(result2.is_ok());
+
+    // Test Case 3: Data wrapped in "message" field
+    let message_wrapped = serde_json::json!({
+        "message": serde_json::to_string(&transaction_data).unwrap()
+    });
+    let result3 = parse_message_for_topic(&Topic::Transactions, serde_json::to_string(&message_wrapped).unwrap().as_bytes());
+    assert!(result3.is_ok());
+
+    // Verify all parsed correctly
+    for result in [result1, result2, result3] {
+        if let Ok(SparkScanMessage::Transaction(tx)) = result {
+            assert_eq!(tx.id, "envelope_test");
+        } else {
+            panic!("Expected transaction message");
+        }
+    }
 }

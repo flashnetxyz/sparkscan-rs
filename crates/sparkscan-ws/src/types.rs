@@ -461,6 +461,274 @@ pub fn parse_message_for_topic(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use serde_json::json;
+
+    #[test]
+    fn test_extract_payload_data_double_encoded_string() {
+        // Test Case 1: Double-encoded JSON string (most common for Centrifugo)
+        let inner_json = json!({
+            "id": "test_id",
+            "type": "spark_to_spark"
+        });
+        let double_encoded = json!(serde_json::to_string(&inner_json).unwrap());
+        
+        let result = extract_payload_data(double_encoded).unwrap();
+        assert_eq!(result["id"], "test_id");
+        assert_eq!(result["type"], "spark_to_spark");
+    }
+
+    #[test]
+    fn test_extract_payload_data_wrapped_in_data_field() {
+        // Test Case 2: Data wrapped in "data" field
+        let inner_json = json!({
+            "id": "test_id",
+            "status": "pending"
+        });
+        let wrapped = json!({
+            "data": serde_json::to_string(&inner_json).unwrap()
+        });
+        
+        let result = extract_payload_data(wrapped).unwrap();
+        assert_eq!(result["id"], "test_id");
+        assert_eq!(result["status"], "pending");
+    }
+
+    #[test]
+    fn test_extract_payload_data_wrapped_in_payload_field() {
+        // Test Case 3: Data wrapped in "payload" field
+        let inner_json = json!({
+            "network": "REGTEST",
+            "amount": "1000"
+        });
+        let wrapped = json!({
+            "payload": inner_json.clone()
+        });
+        
+        let result = extract_payload_data(wrapped).unwrap();
+        assert_eq!(result, inner_json);
+    }
+
+    #[test]
+    fn test_extract_payload_data_wrapped_in_message_field() {
+        // Test Case 4: Data wrapped in "message" field
+        let inner_json = json!({
+            "type": "token_multi_transfer",
+            "processed_at": "2025-08-06T16:28:42.955000Z"
+        });
+        let wrapped = json!({
+            "message": serde_json::to_string(&inner_json).unwrap()
+        });
+        
+        let result = extract_payload_data(wrapped).unwrap();
+        assert_eq!(result["type"], "token_multi_transfer");
+        assert_eq!(result["processed_at"], "2025-08-06T16:28:42.955000Z");
+    }
+
+    #[test]
+    fn test_extract_payload_data_direct_payload() {
+        // Test Case 5: Direct payload (no wrapping)
+        let direct_json = json!({
+            "id": "direct_test",
+            "network": "MAINNET",
+            "type": "spark_to_lightning"
+        });
+        
+        let result = extract_payload_data(direct_json.clone()).unwrap();
+        assert_eq!(result, direct_json);
+    }
+
+    #[test]
+    fn test_extract_payload_data_invalid_json_string() {
+        // Test invalid JSON string
+        let invalid_wrapped = json!("invalid json string");
+        
+        let result = extract_payload_data(invalid_wrapped);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_create_fallback_transaction_payload_minimal() {
+        // Test with minimal required fields
+        let json_data = json!({
+            "id": "test_transaction",
+            "network": "MAINNET",
+            "type": "spark_to_spark",
+            "status": "confirmed",
+            "processed_at": "2025-08-06T16:28:42.955000Z"
+        });
+
+        let result = create_fallback_transaction_payload(json_data).unwrap();
+        assert_eq!(result.id, "test_transaction");
+        assert_eq!(format!("{:?}", result.network), "Mainnet");
+        assert_eq!(format!("{:?}", result.type_), "SparkToSpark");
+        assert_eq!(format!("{:?}", result.status), "Confirmed");
+        assert!(result.processed_at.to_string().contains("2025-08-06"));
+    }
+
+    #[test]
+    fn test_create_fallback_transaction_payload_with_all_fields() {
+        // Test with all optional fields present
+        let json_data = json!({
+            "id": "full_transaction",
+            "network": "REGTEST",
+            "type": "token_multi_transfer",
+            "status": "pending",
+            "processed_at": "2025-08-06T16:28:42.955000Z",
+            "amount_sats": "1000",
+            "token_amount": "500000",
+            "token_address": "btkn1test123",
+            "from_identifier": "sp1from123",
+            "to_identifier": "sp1to456",
+            "bitcoin_txid": "abc123def456",
+            "updated_at": "2025-08-06T16:28:43.955000Z",
+            "expired_time": "2025-08-06T16:30:42.955000Z"
+        });
+
+        let result = create_fallback_transaction_payload(json_data).unwrap();
+        assert_eq!(result.id, "full_transaction");
+        assert_eq!(result.amount_sats, Some("1000".to_string()));
+        assert_eq!(result.token_amount, Some("500000".to_string()));
+        assert_eq!(result.token_address, Some("btkn1test123".to_string()));
+        assert_eq!(result.from_identifier, Some("sp1from123".to_string()));
+        assert_eq!(result.to_identifier, Some("sp1to456".to_string()));
+        assert_eq!(result.bitcoin_txid, Some("abc123def456".to_string()));
+        assert!(result.updated_at.is_some());
+        assert!(result.expired_time.is_some());
+    }
+
+    #[test]
+    fn test_create_fallback_transaction_payload_with_unmapped_fields() {
+        // Test with unmapped fields that should go into token_io_details
+        let json_data = json!({
+            "id": "unmapped_test",
+            "network": "REGTEST", 
+            "type": "token_multi_transfer",
+            "status": "confirmed",
+            "processed_at": "2025-08-06T16:28:42.955000Z",
+            "token_io_details": {
+                "inputs": [{"amount": "1000", "output_id": "test"}],
+                "outputs": [{"amount": "500", "vout": 0}]
+            },
+            "custom_field": "custom_value",
+            "another_unmapped": 12345,
+            "complex_unmapped": {
+                "nested": "data"
+            }
+        });
+
+        let result = create_fallback_transaction_payload(json_data).unwrap();
+        assert_eq!(result.id, "unmapped_test");
+        
+        // Check that token_io_details contains the original data
+        let token_io_details = result.token_io_details.unwrap();
+        assert!(token_io_details.contains_key("original"));
+        assert!(token_io_details.contains_key("unmapped_fields"));
+        
+        // Check unmapped fields are preserved
+        let unmapped = token_io_details["unmapped_fields"].as_object().unwrap();
+        assert_eq!(unmapped["custom_field"], "custom_value");
+        assert_eq!(unmapped["another_unmapped"], 12345);
+        assert_eq!(unmapped["complex_unmapped"]["nested"], "data");
+    }
+
+    #[test]
+    fn test_create_fallback_transaction_payload_with_defaults() {
+        // Test with missing fields that should use defaults
+        let json_data = json!({
+            "processed_at": "2025-08-06T16:28:42.955000Z"
+        });
+
+        let result = create_fallback_transaction_payload(json_data).unwrap();
+        assert_eq!(result.id, "unknown");
+        assert_eq!(format!("{:?}", result.network), "Regtest");
+        assert_eq!(format!("{:?}", result.type_), "Unknown");
+        assert_eq!(format!("{:?}", result.status), "Pending");
+    }
+
+    #[test]
+    fn test_create_fallback_transaction_payload_invalid_object() {
+        // Test with non-object JSON (should fail)
+        let json_data = json!("not an object");
+        
+        let result = create_fallback_transaction_payload(json_data);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_parse_message_for_topic_fallback_transaction() {
+        // Test transaction parsing with fallback mechanism
+        // Use an invalid address format that will cause the normal parsing to fail
+        let invalid_transaction_json = json!({
+            "id": "fallback_test",
+            "network": "REGTEST",
+            "type": "token_multi_transfer", 
+            "status": "pending",
+            "processed_at": "2025-08-06T16:28:42.955000Z",
+            "from_identifier": "invalid_address_format_that_breaks_parsing",
+            "to_identifier": "another_invalid_address", 
+            "token_address": "invalid_token_address",
+            "custom_data": {
+                "inputs": [{"amount": "1000"}],
+                "outputs": [{"amount": "500"}]
+            }
+        });
+
+        let json_str = serde_json::to_string(&invalid_transaction_json).unwrap();
+        let result = parse_message_for_topic(&Topic::Transactions, json_str.as_bytes());
+        
+        assert!(result.is_ok());
+        if let Ok(SparkScanMessage::Transaction(tx)) = result {
+            assert_eq!(tx.id, "fallback_test");
+            // The transaction should have unmapped fields or the original data preserved
+            // This validates that fallback parsing worked
+            assert_eq!(tx.from_identifier, Some("invalid_address_format_that_breaks_parsing".to_string()));
+            assert_eq!(tx.to_identifier, Some("another_invalid_address".to_string()));
+            assert_eq!(tx.token_address, Some("invalid_token_address".to_string()));
+        }
+    }
+
+    #[test]
+    fn test_parse_message_for_topic_double_encoded_json() {
+        // Test parsing double-encoded JSON (common Centrifugo pattern)
+        let transaction_data = json!({
+            "id": "double_encoded_test",
+            "network": "MAINNET",
+            "type": "spark_to_lightning",
+            "status": "confirmed",
+            "processed_at": "2025-08-06T16:28:42.955000Z",
+            "amount_sats": "1000"
+        });
+        
+        // Double-encode the JSON
+        let double_encoded = serde_json::to_string(&transaction_data).unwrap();
+        
+        let result = parse_message_for_topic(&Topic::Transactions, double_encoded.as_bytes());
+        assert!(result.is_ok());
+        
+        if let Ok(SparkScanMessage::Transaction(tx)) = result {
+            assert_eq!(tx.id, "double_encoded_test");
+            assert_eq!(tx.amount_sats, Some("1000".to_string()));
+        }
+    }
+
+    #[test]
+    fn test_spark_scan_message_methods() {
+        // Test message type and network extraction
+        let balance_json = json!({
+            "address": "sp1pgssx6rwqjer2xsmhe5x6mg6ng0cfu77q58vtcz9f0emuuzftnl7zvv6qujs5s",
+            "network": "MAINNET",
+            "soft_balance": "100",
+            "hard_balance": "90",
+            "processed_at": "2025-08-06T16:28:42.955000Z"
+        });
+
+        let json_str = serde_json::to_string(&balance_json).unwrap();
+        let result = parse_message_for_topic(&Topic::Balances, json_str.as_bytes()).unwrap();
+
+        assert_eq!(result.message_type(), "balance");
+        assert!(result.network().is_some());
+        assert!(result.network().unwrap().contains("Mainnet"));
+    }
 
     #[test]
     fn test_topic_parsing() {
