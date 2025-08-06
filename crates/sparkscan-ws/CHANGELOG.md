@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.5.0](https://github.com/flashnetxyz/sparkscan-rs/compare/sparkscan-ws_v0.4.0...sparkscan-ws_v0.5.0) - 2025-08-06
+
+### Added
+
+- *(sparkscan-ws)* Adds token transfer type to transaction schema
+
 ## [0.4.0](https://github.com/flashnetxyz/sparkscan-rs/compare/sparkscan-ws_v0.3.1...sparkscan-ws_v0.4.0) - 2025-08-06
 
 ### Added
