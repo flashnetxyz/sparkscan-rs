@@ -64,9 +64,16 @@
             "type": "string"
         },
         "token_io_details": {
-            "title": "Token Io Details",
-            "type": "object",
-            "additionalProperties": true
+            "anyOf": [
+                {
+                    "additionalProperties": true,
+                    "type": "object"
+                },
+                {
+                    "type": "null"
+                }
+            ],
+            "title": "Token Io Details"
         },
         "updated_at": {
             "format": "date-time",

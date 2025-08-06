@@ -129,17 +129,45 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                     println!("  ID: {}", tx.id);
                     println!("  Type: {:?}", tx.type_);
                     println!("  Status: {:?}", tx.status);
-                    if let Some(amount) = &tx.amount_sats {
-                        println!("  Amount: {} sats", amount);
-                    }
-                    if let Some(from) = &tx.from_identifier {
-                        println!("  From: {:?}", from);
-                    }
-                    if let Some(to) = &tx.to_identifier {
-                        println!("  To: {:?}", to);
-                    }
                     println!("  Network: {:?}", tx.network);
                     println!("  Processed At: {}", tx.processed_at);
+                    
+                    // Optional amount fields
+                    if let Some(amount) = &tx.amount_sats {
+                        println!("  Amount (sats): {}", amount);
+                    }
+                    if let Some(token_amount) = &tx.token_amount {
+                        println!("  Token Amount: {}", token_amount);
+                    }
+                    
+                    // Optional identifier fields
+                    if let Some(from) = &tx.from_identifier {
+                        println!("  From: {}", from);
+                    }
+                    if let Some(to) = &tx.to_identifier {
+                        println!("  To: {}", to);
+                    }
+                    
+                    // Optional token fields
+                    if let Some(token_address) = &tx.token_address {
+                        println!("  Token Address: {}", token_address);
+                    }
+                    if let Some(token_io_details) = &tx.token_io_details {
+                        println!("  Token I/O Details: {:?}", token_io_details);
+                    }
+                    
+                    // Optional Bitcoin transaction ID
+                    if let Some(bitcoin_txid) = &tx.bitcoin_txid {
+                        println!("  Bitcoin TXID: {}", bitcoin_txid);
+                    }
+                    
+                    // Optional timestamp fields
+                    if let Some(updated_at) = &tx.updated_at {
+                        println!("  Updated At: {}", updated_at);
+                    }
+                    if let Some(expired_time) = &tx.expired_time {
+                        println!("  Expired Time: {}", expired_time);
+                    }
                 }
             }
             println!("  ------------------------------------");
@@ -154,7 +182,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     // Wait for messages with periodic status updates
     let mut seconds_elapsed = 0;
-    let max_wait = 60;
+    let max_wait = 300;
 
     loop {
         // Check for shutdown signal with timeout
