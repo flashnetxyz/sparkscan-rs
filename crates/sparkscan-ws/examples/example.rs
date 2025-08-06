@@ -43,7 +43,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Establish connection
     println!("Connecting...");
     client.connect().await?;
-    
+
     // Wait for connection establishment
     for i in 1..=10 {
         if connected.load(Ordering::Relaxed) {
@@ -71,9 +71,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     for (topic, description) in topics {
         let topic_name = topic.as_str();
         println!("Subscribing to: {} ({})", topic_name, description);
-        
+
         let subscription = client.subscribe(topic).await?;
-        
+
         subscription.on_subscribed(|| {
             println!("  Subscription active");
         });
@@ -87,7 +87,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         subscription.on_message(move |message| {
             let count = message_count.fetch_add(1, Ordering::Relaxed) + 1;
             println!("\nMessage #{} received:", count);
-            
+
             match message {
                 SparkScanMessage::Balance(balance) => {
                     println!("  Type: Balance Update");
@@ -131,7 +131,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                     println!("  Status: {:?}", tx.status);
                     println!("  Network: {:?}", tx.network);
                     println!("  Processed At: {}", tx.processed_at);
-                    
+
                     // Optional amount fields
                     if let Some(amount) = &tx.amount_sats {
                         println!("  Amount (sats): {}", amount);
@@ -139,7 +139,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                     if let Some(token_amount) = &tx.token_amount {
                         println!("  Token Amount: {}", token_amount);
                     }
-                    
+
                     // Optional identifier fields
                     if let Some(from) = &tx.from_identifier {
                         println!("  From: {}", from);
@@ -147,7 +147,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                     if let Some(to) = &tx.to_identifier {
                         println!("  To: {}", to);
                     }
-                    
+
                     // Optional token fields
                     if let Some(token_address) = &tx.token_address {
                         println!("  Token Address: {}", token_address);
@@ -155,12 +155,12 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                     if let Some(token_io_details) = &tx.token_io_details {
                         println!("  Token I/O Details: {:?}", token_io_details);
                     }
-                    
+
                     // Optional Bitcoin transaction ID
                     if let Some(bitcoin_txid) = &tx.bitcoin_txid {
                         println!("  Bitcoin TXID: {}", bitcoin_txid);
                     }
-                    
+
                     // Optional timestamp fields
                     if let Some(updated_at) = &tx.updated_at {
                         println!("  Updated At: {}", updated_at);
@@ -195,16 +195,19 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             Err(_) => {
                 // Timeout occurred, continue monitoring
                 seconds_elapsed += 1;
-                
+
                 if seconds_elapsed >= max_wait {
                     println!("\n60 seconds elapsed - ending example");
                     break;
                 }
-                
+
                 // Status update every 15 seconds
                 if seconds_elapsed % 15 == 0 {
                     let msg_count = message_count.load(Ordering::Relaxed);
-                    println!("Status: {}s elapsed, {} messages received", seconds_elapsed, msg_count);
+                    println!(
+                        "Status: {}s elapsed, {} messages received",
+                        seconds_elapsed, msg_count
+                    );
                 }
             }
         }
@@ -213,7 +216,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let final_count = message_count.load(Ordering::Relaxed);
     println!("\nExample Summary:");
     println!("  Total messages received: {}", final_count);
-    
+
     if final_count == 0 {
         println!("  No messages received - possible reasons:");
         println!("    - API may not have active data streams at this time");

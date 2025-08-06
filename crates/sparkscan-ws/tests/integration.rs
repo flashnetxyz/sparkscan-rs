@@ -9,11 +9,11 @@ use chrono::{DateTime, Utc};
 use sparkscan_ws::{
     subscription::SubscriptionManager,
     types::{
-        parse_message_for_topic,
         balance::{BalancePayload, Network as BalanceNetwork},
+        parse_message_for_topic,
         token::Network as TokenNetwork,
-        token_balance::{TokenBalancePayload, Network as TokenBalanceNetwork},
-        transaction::{TransactionPayload, Network as TransactionNetwork},
+        token_balance::{Network as TokenBalanceNetwork, TokenBalancePayload},
+        transaction::{Network as TransactionNetwork, TransactionPayload},
     },
     SparkScanMessage, SparkScanWsClient, SparkScanWsConfig, Topic,
 };
@@ -89,13 +89,13 @@ fn test_message_type_detection() {
         "hard_balance": "90",
         "processed_at": "2025-08-02T20:02:54.035000Z"
     }"#;
-    
+
     let result = parse_message_for_topic(&Topic::Balances, balance_json.as_bytes());
     if let Err(e) = &result {
         println!("Parse error for balance: {:?}", e);
     }
     assert!(result.is_ok(), "Failed to parse balance JSON: {:?}", result);
-    
+
     if let Ok(message) = result {
         assert_eq!(message.message_type(), "balance");
         assert!(message.network().is_some());
@@ -109,10 +109,10 @@ fn test_message_type_detection() {
         "balance": "500",
         "processed_at": "2025-08-02T20:02:54.035000Z"
     }"#;
-    
+
     let result = parse_message_for_topic(&Topic::TokenBalances, token_balance_json.as_bytes());
     assert!(result.is_ok());
-    
+
     if let Ok(message) = result {
         assert_eq!(message.message_type(), "token_balance");
         assert!(message.network().is_some());
@@ -291,7 +291,10 @@ fn test_real_api_data_compatibility() {
         assert!(matches!(tx.type_, _)); // Any variant is valid
         assert!(matches!(tx.status, _)); // Any variant is valid
         assert!(tx.amount_sats.is_some());
-        assert!(matches!(tx.network, TransactionNetwork::Mainnet | TransactionNetwork::Regtest));
+        assert!(matches!(
+            tx.network,
+            TransactionNetwork::Mainnet | TransactionNetwork::Regtest
+        ));
     } else {
         panic!("Expected Transaction message");
     }

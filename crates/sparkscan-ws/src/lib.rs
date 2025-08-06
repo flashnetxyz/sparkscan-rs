@@ -174,8 +174,8 @@ pub use types::{SparkScanMessage, Topic};
 // Re-export generated types
 pub use types::{
     balance::BalancePayload,
-    token_balance::TokenBalancePayload,
     token::TokenPayload,
+    token_balance::TokenBalancePayload,
     token_price::TokenPricePayload,
     transaction::{TransactionPayload, Type},
 };

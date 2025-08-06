@@ -5,10 +5,10 @@ mod tests {
     use chrono::{DateTime, Utc};
     use sparkscan_ws::{
         types::{
-            parse_message_for_topic,
             balance::{BalancePayload, Network as BalanceNetwork},
+            parse_message_for_topic,
             token::Network as TokenNetwork,
-            token_balance::{TokenBalancePayload, Network as TokenBalanceNetwork},
+            token_balance::{Network as TokenBalanceNetwork, TokenBalancePayload},
         },
         SparkScanMessage, SparkScanWsClient, SparkScanWsConfig, Topic,
     };
@@ -16,10 +16,7 @@ mod tests {
     #[tokio::test]
     async fn test_client_creation() {
         let client = SparkScanWsClient::new("ws://sparkscan.io/");
-        assert_eq!(
-            client.config().url,
-            "ws://sparkscan.io/"
-        );
+        assert_eq!(client.config().url, "ws://sparkscan.io/");
         assert!(!client.config().use_protobuf);
     }
 
