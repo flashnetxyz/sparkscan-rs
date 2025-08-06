@@ -371,14 +371,14 @@ mod tests {
 
     #[test]
     fn test_config_builder_pattern() {
-        let config = SparkScanWsConfig::new("ws://localhost:8000")
+        let config = SparkScanWsConfig::new("ws://sparkscan.io/")
             .with_protobuf(true)
             .with_timeout(60)
             .with_auto_reconnect(false)
             .with_max_reconnect_attempts(10)
             .with_reconnect_delay(2000);
 
-        assert_eq!(config.url, "ws://localhost:8000");
+        assert_eq!(config.url, "ws://sparkscan.io/");
         assert!(config.use_protobuf);
         assert_eq!(config.connection_timeout, 60);
         assert!(!config.auto_reconnect);
@@ -388,14 +388,14 @@ mod tests {
 
     #[tokio::test]
     async fn test_client_creation_with_defaults() {
-        let client = SparkScanWsClient::new("ws://localhost:8000");
-        assert_eq!(client.config().url, "ws://localhost:8000");
+        let client = SparkScanWsClient::new("ws://sparkscan.io/");
+        assert_eq!(client.config().url, "ws://sparkscan.io/");
         assert!(!client.config().use_protobuf);
     }
 
     #[tokio::test]
     async fn test_client_clone_shares_state() {
-        let client = SparkScanWsClient::new("ws://localhost:8000");
+        let client = SparkScanWsClient::new("ws://sparkscan.io/");
         let cloned = client.clone();
         assert_eq!(client.config().url, cloned.config().url);
     }

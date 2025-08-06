@@ -14,8 +14,8 @@ use sparkscan_ws::{
 
 #[tokio::test]
 async fn test_client_creation_and_config() {
-    let client = SparkScanWsClient::new("ws://example.com/websocket");
-    assert_eq!(client.config().url, "ws://example.com/websocket");
+    let client = SparkScanWsClient::new("ws://sparkscan.io/");
+    assert_eq!(client.config().url, "ws://sparkscan.io/");
     assert!(!client.config().use_protobuf);
     assert_eq!(client.config().connection_timeout, 30);
     assert!(client.config().auto_reconnect);
@@ -23,7 +23,7 @@ async fn test_client_creation_and_config() {
 
 #[tokio::test]
 async fn test_custom_config() {
-    let config = SparkScanWsConfig::new("ws://example.com/websocket")
+    let config = SparkScanWsConfig::new("ws://sparkscan.io/")
         .with_protobuf(true)
         .with_timeout(60)
         .with_auto_reconnect(false)
@@ -31,7 +31,7 @@ async fn test_custom_config() {
         .with_reconnect_delay(5000);
 
     let client = SparkScanWsClient::with_config(config);
-    assert_eq!(client.config().url, "ws://example.com/websocket");
+    assert_eq!(client.config().url, "ws://sparkscan.io/");
     assert!(client.config().use_protobuf);
     assert_eq!(client.config().connection_timeout, 60);
     assert!(!client.config().auto_reconnect);
@@ -242,7 +242,7 @@ fn test_prelude_exports() {
 #[tokio::test]
 async fn test_async_operations() {
     // Test async creation of subscriptions
-    let client = SparkScanWsClient::new("ws://localhost:8000/websocket");
+    let client = SparkScanWsClient::new("ws://sparkscan.io/");
 
     // These operations should not panic even without a real connection
     let balance_subscription = client.subscribe(Topic::Balances).await;

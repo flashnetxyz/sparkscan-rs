@@ -10,22 +10,22 @@ mod tests {
 
     #[tokio::test]
     async fn test_client_creation() {
-        let client = SparkScanWsClient::new("ws://localhost:8000/connection/websocket");
+        let client = SparkScanWsClient::new("ws://sparkscan.io/");
         assert_eq!(
             client.config().url,
-            "ws://localhost:8000/connection/websocket"
+            "ws://sparkscan.io/"
         );
         assert!(!client.config().use_protobuf);
     }
 
     #[test]
     fn test_config_builder() {
-        let config = SparkScanWsConfig::new("ws://localhost:8000")
+        let config = SparkScanWsConfig::new("ws://sparkscan.io/")
             .with_protobuf(true)
             .with_timeout(60)
             .with_auto_reconnect(false);
 
-        assert_eq!(config.url, "ws://localhost:8000");
+        assert_eq!(config.url, "ws://sparkscan.io/");
         assert!(config.use_protobuf);
         assert_eq!(config.connection_timeout, 60);
         assert!(!config.auto_reconnect);
@@ -169,7 +169,7 @@ mod tests {
     #[tokio::test]
     async fn test_subscription_creation() {
         // Test that we can create subscriptions without panicking
-        let client = SparkScanWsClient::new("ws://localhost:8000/connection/websocket");
+        let client = SparkScanWsClient::new("ws://sparkscan.io/");
 
         // Note: This will fail to actually connect in tests, but we can
         // test that the subscription creation doesn't panic
