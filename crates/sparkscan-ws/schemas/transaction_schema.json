@@ -23,6 +23,7 @@
                 "spark_to_bitcoin",
                 "spark_to_lightning",
                 "spark_to_spark",
+                "token_transfer",
                 "unknown"
             ],
             "title": "Type",
