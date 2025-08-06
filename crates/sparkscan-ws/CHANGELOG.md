@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.0](https://github.com/flashnetxyz/sparkscan-rs/compare/sparkscan-ws_v0.3.1...sparkscan-ws_v0.4.0) - 2025-08-06
+
+### Added
+
+- *(sparkscan-ws)* improve message parsing and generation
+- *(sparkscan-ws)* enhance transaction details in example and schema
+- *(sparkscan-ws)* generate separate modules for each schema
+
+### Other
+
+- *(sparkscan-ws)* Add comprehensive message parsing tests
+- *(sparkscan-ws)* transaction schema definition
+- *(sparkscan-ws)* update test URLs to sparkscan.io
+
 ## [0.3.1](https://github.com/flashnetxyz/sparkscan-rs/compare/sparkscan-ws_v0.3.0...sparkscan-ws_v0.3.1) - 2025-08-05
 
 ### Added
