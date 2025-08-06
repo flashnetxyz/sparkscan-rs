@@ -8,7 +8,13 @@
 use chrono::{DateTime, Utc};
 use sparkscan_ws::{
     subscription::SubscriptionManager,
-    types::{parse_message_for_topic, BalancePayload, Network, TokenBalancePayload},
+    types::{
+        parse_message_for_topic,
+        balance::{BalancePayload, Network as BalanceNetwork},
+        token::Network as TokenNetwork,
+        token_balance::{TokenBalancePayload, Network as TokenBalanceNetwork},
+        transaction::{TransactionPayload, Network as TransactionNetwork},
+    },
     SparkScanMessage, SparkScanWsClient, SparkScanWsConfig, Topic,
 };
 
@@ -137,7 +143,7 @@ fn test_message_parsing_with_real_schema_data() {
         // Network is an enum, check for valid SparkScan networks (mainnet and regtest)
         assert!(matches!(
             balance.network,
-            Network::Mainnet | Network::Regtest
+            BalanceNetwork::Mainnet | BalanceNetwork::Regtest
         ));
         // DateTime exists - we can't check is_empty on DateTime
     } else {
@@ -160,7 +166,7 @@ fn test_message_parsing_with_real_schema_data() {
         // Test that required fields are present and valid
         assert!(matches!(
             token_balance.network,
-            Network::Mainnet | Network::Regtest
+            TokenBalanceNetwork::Mainnet | TokenBalanceNetwork::Regtest
         ));
         assert!(!token_balance.address.is_empty());
         assert!(!token_balance.token_address.is_empty());
@@ -285,12 +291,12 @@ fn test_real_api_data_compatibility() {
         assert!(matches!(tx.type_, _)); // Any variant is valid
         assert!(matches!(tx.status, _)); // Any variant is valid
         assert!(tx.amount_sats.is_some());
-        assert!(matches!(tx.network, Network::Mainnet | Network::Regtest));
+        assert!(matches!(tx.network, TransactionNetwork::Mainnet | TransactionNetwork::Regtest));
     } else {
         panic!("Expected Transaction message");
     }
 
     // Note: Skipping token test as it demonstrates typify's strong validation
     // The fact that our invalid test data is rejected proves the type system is working correctly!
-    println!("✓ Typify validation working correctly - rejecting invalid address formats");
+    println!("Typify validation working correctly - rejecting invalid address formats");
 }

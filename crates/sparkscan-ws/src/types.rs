@@ -14,23 +14,23 @@ include!(concat!(env!("OUT_DIR"), "/types.rs"));
 pub enum SparkScanMessage {
     /// Balance update message
     #[serde(rename = "balance")]
-    Balance(BalancePayload),
+    Balance(balance::BalancePayload),
 
     /// Token balance update message
     #[serde(rename = "token_balance")]
-    TokenBalance(TokenBalancePayload),
+    TokenBalance(token_balance::TokenBalancePayload),
 
     /// Token price update message
     #[serde(rename = "token_price")]
-    TokenPrice(TokenPricePayload),
+    TokenPrice(token_price::TokenPricePayload),
 
     /// Token information update message
     #[serde(rename = "token")]
-    Token(TokenPayload),
+    Token(token::TokenPayload),
 
     /// Transaction update message
     #[serde(rename = "transaction")]
-    Transaction(TransactionPayload),
+    Transaction(transaction::TransactionPayload),
 }
 
 impl SparkScanMessage {
@@ -234,32 +234,32 @@ pub fn parse_message_for_topic(
 
     match topic {
         Topic::Balances | Topic::BalanceNetwork(_) | Topic::BalanceAddress(_) => {
-            let payload: BalancePayload = serde_json::from_value(payload_data)?;
+            let payload: balance::BalancePayload = serde_json::from_value(payload_data)?;
             Ok(SparkScanMessage::Balance(payload))
         }
         Topic::TokenBalances
         | Topic::TokenBalanceNetwork(_)
         | Topic::TokenBalanceIdentifier(_)
         | Topic::TokenBalanceAddress(_) => {
-            let payload: TokenBalancePayload = serde_json::from_value(payload_data)?;
+            let payload: token_balance::TokenBalancePayload = serde_json::from_value(payload_data)?;
             Ok(SparkScanMessage::TokenBalance(payload))
         }
         Topic::TokenPrices | Topic::TokenPriceNetwork(_) | Topic::TokenPriceIdentifier(_) => {
-            let payload: TokenPricePayload = serde_json::from_value(payload_data)?;
+            let payload: token_price::TokenPricePayload = serde_json::from_value(payload_data)?;
             Ok(SparkScanMessage::TokenPrice(payload))
         }
         Topic::Tokens
         | Topic::TokenIdentifier(_)
         | Topic::TokenNetwork(_)
         | Topic::TokenIssuer(_) => {
-            let payload: TokenPayload = serde_json::from_value(payload_data)?;
+            let payload: token::TokenPayload = serde_json::from_value(payload_data)?;
             Ok(SparkScanMessage::Token(payload))
         }
         Topic::Transactions
         | Topic::TransactionNetwork(_)
         | Topic::TransactionIn(_, _)
         | Topic::TransactionOut(_, _) => {
-            let payload: TransactionPayload = serde_json::from_value(payload_data)?;
+            let payload: transaction::TransactionPayload = serde_json::from_value(payload_data)?;
             Ok(SparkScanMessage::Transaction(payload))
         }
     }

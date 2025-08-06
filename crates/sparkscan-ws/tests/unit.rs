@@ -4,7 +4,12 @@
 mod tests {
     use chrono::{DateTime, Utc};
     use sparkscan_ws::{
-        types::{parse_message_for_topic, BalancePayload, Network},
+        types::{
+            parse_message_for_topic,
+            balance::{BalancePayload, Network as BalanceNetwork},
+            token::Network as TokenNetwork,
+            token_balance::{TokenBalancePayload, Network as TokenBalanceNetwork},
+        },
         SparkScanMessage, SparkScanWsClient, SparkScanWsConfig, Topic,
     };
 
@@ -98,7 +103,7 @@ mod tests {
                 println!("Balance address: {:?}", balance.address);
                 assert_eq!(balance.hard_balance, "301");
                 assert_eq!(balance.soft_balance, "379");
-                assert_eq!(balance.network, Network::Mainnet);
+                assert_eq!(balance.network, BalanceNetwork::Mainnet);
             }
             _ => panic!("Expected Balance message"),
         }
@@ -123,7 +128,7 @@ mod tests {
 
         match message {
             SparkScanMessage::TokenBalance(token_balance) => {
-                assert_eq!(token_balance.network, Network::Mainnet);
+                assert_eq!(token_balance.network, TokenBalanceNetwork::Mainnet);
                 // Address and token_address are now typed structs, not strings
                 println!("Token balance address: {:?}", token_balance.address);
                 println!("Token address: {:?}", token_balance.token_address);
