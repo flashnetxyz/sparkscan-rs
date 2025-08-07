@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.5.1](https://github.com/flashnetxyz/sparkscan-rs/compare/sparkscan-ws_v0.5.0...sparkscan-ws_v0.5.1) - 2025-08-07
+
+### Other
+
+- *(sparkscan-ws)* fix typo in documentation comment
+
 ## [0.5.0](https://github.com/flashnetxyz/sparkscan-rs/compare/sparkscan-ws_v0.4.0...sparkscan-ws_v0.5.0) - 2025-08-06
 
 ### Added
