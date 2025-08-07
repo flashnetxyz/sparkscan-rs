@@ -7,7 +7,7 @@
 //! message deserialization and robust subscription management, built on the proven tokio-centrifuge framework.
 //!
 //! Designed for production environments requiring reliable, low-latency access to SparkScan's real-time
-//! blockchain data feeds including balance updates, transaction notifications, and token price movements.
+//! data feeds including balance updates, transaction notifications, and token price movements.
 //!
 //! ## Core Features
 //!
