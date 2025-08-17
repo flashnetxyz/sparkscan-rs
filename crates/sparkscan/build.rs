@@ -6,6 +6,8 @@ cfg_if::cfg_if! {
     }
 }
 
+use schemars::schema::{InstanceType, SchemaObject};
+
 fn main() {
     let src = "./openapi.json";
     println!("cargo:rerun-if-changed={}", src);
@@ -13,8 +15,18 @@ fn main() {
     let file = std::fs::File::open(src).unwrap();
     let spec = serde_json::from_reader(file).unwrap();
 
-    let mut settings = progenitor::GenerationSettings::default();
+    let mut settings = progenitor::GenerationSettings::new();
     settings.with_interface(progenitor::InterfaceStyle::Builder);
+    
+    // Replace all integer schemas with i128
+    settings.with_conversion(
+        SchemaObject {
+            instance_type: Some(InstanceType::Integer.into()),
+            ..Default::default()
+        },
+        "i128",
+        std::iter::empty(),
+    );
 
     let mut generator = progenitor::Generator::new(&settings);
     let tokens = generator.generate_tokens(&spec).unwrap();
