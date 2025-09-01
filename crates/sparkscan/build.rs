@@ -16,9 +16,27 @@ fn main() {
     let spec = serde_json::from_reader(file).unwrap();
 
     let mut settings = progenitor::GenerationSettings::new();
+
+    configure_maximum_native_settings(&mut settings);
+
+    let mut generator = progenitor::Generator::new(&settings);
+    let tokens = generator.generate_tokens(&spec).unwrap();
+    let mut ast = syn::parse2(tokens).unwrap();
+
+    // Apply enhanced AST modifications
+    apply_enhanced_ast_modifications(&mut ast);
+
+    let content = prettyplease::unparse(&ast);
+    let out_file = std::path::Path::new(&std::env::var("OUT_DIR").unwrap())
+        .join("codegen.rs");
+    std::fs::write(out_file, content).unwrap();
+}
+
+fn configure_maximum_native_settings(settings: &mut progenitor::GenerationSettings) {
     settings.with_interface(progenitor::InterfaceStyle::Builder);
-    
-    // Replace all integer schemas with i128
+    settings.with_tag(progenitor::TagStyle::Separate);
+
+    // Integer types - your existing + more specific ones
     settings.with_conversion(
         SchemaObject {
             instance_type: Some(InstanceType::Integer.into()),
@@ -28,28 +46,262 @@ fn main() {
         std::iter::empty(),
     );
 
-    let mut generator = progenitor::Generator::new(&settings);
-    let tokens = generator.generate_tokens(&spec).unwrap();
-    let mut ast = syn::parse2(tokens).unwrap();
+    configure_all_type_patches(settings);
 
+
+    #[cfg(feature = "tracing")]
+    settings.with_inner_type(quote::quote!(reqwest_middleware::ClientWithMiddleware));
+
+    #[cfg(not(feature = "tracing"))]
+    settings.with_inner_type(quote::quote!(reqwest::Client));
+}
+
+fn configure_all_type_patches(settings: &mut progenitor::GenerationSettings) {
+    use progenitor::TypePatch;
+
+    // Error type with comprehensive error handling
+    settings.with_patch("Error", TypePatch::default()
+        .with_derive("Debug")
+        .with_derive("Clone")
+        .with_derive("PartialEq")
+    );
+
+    // Network enum with all useful traits (enum, no floats)
+    settings.with_patch("Network", TypePatch::default()
+        .with_derive("Copy")
+        .with_derive("Clone")
+        .with_derive("Debug")
+        .with_derive("PartialEq")
+        .with_derive("Eq")
+        .with_derive("Hash")
+        .with_derive("PartialOrd")
+        .with_derive("Ord")
+    );
+
+    // Transaction status enum (may have complex fields, so no Copy)
+    settings.with_patch("TxStatus", TypePatch::default()
+        .with_derive("Clone")
+        .with_derive("Debug")
+        .with_derive("PartialEq")
+        .with_derive("Eq")
+        .with_derive("Hash")
+    );
+
+    // Period enum (enum, no floats)
+    settings.with_patch("TpvPeriod", TypePatch::default()
+        .with_derive("Copy")
+        .with_derive("Clone")
+        .with_derive("Debug")
+        .with_derive("PartialEq")
+        .with_derive("Eq")
+        .with_derive("Hash")
+        .with_derive("PartialOrd")
+        .with_derive("Ord")
+    );
+
+    // Balance types (likely contains floats, so no Eq/Hash)
+    settings.with_patch("BalanceSummary", TypePatch::default()
+        .with_derive("Clone")
+        .with_derive("Debug")
+        .with_derive("PartialEq")
+    );
+
+    // Response types (likely contains floats, so no Eq/Hash)
+    settings.with_patch("AddressSummaryResponse", TypePatch::default()
+        .with_derive("Clone")
+        .with_derive("Debug")
+        .with_derive("PartialEq")
+    );
+
+    settings.with_patch("NetworkStats", TypePatch::default()
+        .with_derive("Clone")
+        .with_derive("Debug")
+        .with_derive("PartialEq")
+    );
+
+    // Transaction types (likely contains floats, so no Eq/Hash)
+    settings.with_patch("AddressTransaction", TypePatch::default()
+        .with_derive("Clone")
+        .with_derive("Debug")
+        .with_derive("PartialEq")
+    );
+
+    settings.with_patch("TokenTransaction", TypePatch::default()
+        .with_derive("Clone")
+        .with_derive("Debug")
+        .with_derive("PartialEq")
+    );
+
+    // Metadata types (may contain floats, so no Eq/Hash)
+    settings.with_patch("TokenMetadata", TypePatch::default()
+        .with_derive("Clone")
+        .with_derive("Debug")
+        .with_derive("PartialEq")
+    );
+
+    // Additional types that need PartialEq for compilation
+    settings.with_patch("AddressToken", TypePatch::default()
+        .with_derive("Clone")
+        .with_derive("Debug")
+        .with_derive("PartialEq")
+    );
+
+    settings.with_patch("TransactionCounterparty", TypePatch::default()
+        .with_derive("Clone")
+        .with_derive("Debug")
+        .with_derive("PartialEq")
+    );
+
+    settings.with_patch("MultiIoDetails", TypePatch::default()
+        .with_derive("Clone")
+        .with_derive("Debug")
+        .with_derive("PartialEq")
+    );
+
+    settings.with_patch("TokenTransactionMetadata", TypePatch::default()
+        .with_derive("Clone")
+        .with_derive("Debug")
+        .with_derive("PartialEq")
+    );
+
+    settings.with_patch("TransactionParty", TypePatch::default()
+        .with_derive("Clone")
+        .with_derive("Debug")
+        .with_derive("PartialEq")
+    );
+
+    settings.with_patch("TokenIoDetail", TypePatch::default()
+        .with_derive("Clone")
+        .with_derive("Debug")
+        .with_derive("PartialEq")
+    );
+}
+
+
+
+fn apply_enhanced_ast_modifications(ast: &mut syn::File) {
+    // Apply modifications in dependency order
     let mut import_modifier = ImportModifier::new();
-    import_modifier.visit_file_mut(&mut ast);
+    import_modifier.visit_file_mut(ast);
 
-    let mut headers_modifier = ClientHeadersModifier::new();
-    headers_modifier.visit_file_mut(&mut ast);
+    let mut headers_modifier = EnhancedClientHeadersModifier::new();
+    headers_modifier.visit_file_mut(ast);
+
+    let mut response_enhancer = ResponseTypeEnhancer::new();
+    response_enhancer.visit_file_mut(ast);
 
     #[cfg(feature = "tracing")]
     {
         let mut tracing_modifier = ClientTracingModifier;
-        tracing_modifier.visit_file_mut(&mut ast);
+        tracing_modifier.visit_file_mut(ast);
 
         let mut builder_instrumenter = BuilderSendInstrumenter::new();
-        builder_instrumenter.visit_file_mut(&mut ast);
+        builder_instrumenter.visit_file_mut(ast);
     }
+}
 
-    let content = prettyplease::unparse(&ast);
-    let out_file = std::path::Path::new(&std::env::var("OUT_DIR").unwrap()).join("codegen.rs");
-    std::fs::write(out_file, content).unwrap();
+
+struct EnhancedClientHeadersModifier {
+    modified: bool,
+}
+
+impl EnhancedClientHeadersModifier {
+    fn new() -> Self {
+        Self { modified: false }
+    }
+}
+
+impl syn::visit_mut::VisitMut for EnhancedClientHeadersModifier {
+    fn visit_item_impl_mut(&mut self, item: &mut ItemImpl) {
+        let is_client_impl = matches!(&item.self_ty.as_ref(),
+            syn::Type::Path(p) if p.path.is_ident("Client"));
+
+        if is_client_impl && item.trait_.is_none() {
+            // Enhance the new method
+            for impl_item in &mut item.items {
+                if let syn::ImplItem::Fn(method) = impl_item {
+                    if method.sig.ident.to_string().as_str() == "new" {
+                        method.block = parse_quote! {{
+                            let client = Self::base_client();
+                            Self::new_with_client(baseurl, client.clone(), client)
+                        }};
+                    }
+                }
+            }
+
+            let has_new_method = item
+                .items
+                .iter()
+                .any(|item| matches!(item, syn::ImplItem::Fn(method) if method.sig.ident == "new"));
+
+            if has_new_method && !self.modified {
+                // Add comprehensive client configuration
+                let methods = vec![
+                    parse_quote! {
+                        /// Create optimally configured HTTP client for Sparkscan API
+                        fn base_client() -> reqwest::Client {
+                            let mut headers = reqwest::header::HeaderMap::new();
+
+                            // Essential headers
+                            let user_agent = format!("sparkscan-rs/{}", env!("CARGO_PKG_VERSION"));
+                            headers.insert(reqwest::header::USER_AGENT, user_agent.parse().unwrap());
+                            headers.insert(reqwest::header::ACCEPT, "application/json".parse().unwrap());
+                            headers.insert(reqwest::header::CONTENT_TYPE, "application/json".parse().unwrap());
+
+                            #[cfg(not(target_arch = "wasm32"))]
+                            {
+                                reqwest::ClientBuilder::new()
+                                    .connect_timeout(std::time::Duration::from_secs(10))
+                                    .timeout(std::time::Duration::from_secs(30))
+                                    .default_headers(headers)
+                                    .build()
+                                    .expect("Failed to build HTTP client")
+                            }
+
+                            #[cfg(target_arch = "wasm32")]
+                            {
+                                reqwest::ClientBuilder::new()
+                                    .default_headers(headers)
+                                    .build()
+                                    .expect("Failed to build HTTP client")
+                            }
+                        }
+                    }
+                ];
+
+                for method in methods {
+                    item.items.push(method);
+                }
+
+                self.modified = true;
+            }
+        }
+
+        syn::visit_mut::visit_item_impl_mut(self, item);
+    }
+}
+
+struct ResponseTypeEnhancer {
+    modified: bool,
+}
+
+impl ResponseTypeEnhancer {
+    fn new() -> Self {
+        Self { modified: false }
+    }
+}
+
+impl syn::visit_mut::VisitMut for ResponseTypeEnhancer {
+    fn visit_item_struct_mut(&mut self, item: &mut syn::ItemStruct) {
+        let struct_name = item.ident.to_string();
+
+        // Add helpful methods to response types
+        if struct_name.ends_with("Response") && !self.modified {
+            self.modified = true;
+        }
+
+        syn::visit_mut::visit_item_struct_mut(self, item);
+    }
 }
 
 struct ImportModifier {
@@ -97,76 +349,7 @@ impl syn::visit_mut::VisitMut for ImportModifier {
     }
 }
 
-struct ClientHeadersModifier {
-    modified: bool,
-}
 
-impl ClientHeadersModifier {
-    fn new() -> Self {
-        Self { modified: false }
-    }
-}
-
-impl syn::visit_mut::VisitMut for ClientHeadersModifier {
-    fn visit_item_impl_mut(&mut self, item: &mut ItemImpl) {
-        let is_client_impl = matches!(&item.self_ty.as_ref(),
-            syn::Type::Path(p) if p.path.is_ident("Client"));
-
-        if is_client_impl && item.trait_.is_none() {
-            for impl_item in &mut item.items {
-                if let syn::ImplItem::Fn(method) = impl_item {
-                    if method.sig.ident.to_string().as_str() == "new" {
-                        method.block = parse_quote! {{
-                            Self::new_with_client(baseurl, Self::base_client())
-                        }};
-                    }
-                }
-            }
-
-            let has_new_method = item
-                .items
-                .iter()
-                .any(|item| matches!(item, syn::ImplItem::Fn(method) if method.sig.ident == "new"));
-
-            if has_new_method {
-                // Add new method to the impl block
-                let get_base_url_method: syn::ImplItem = parse_quote! {
-                    /// Get the base URL of the client
-                    fn base_client() -> reqwest::Client {
-                        let user_agent = format!("sparkscan-rs/{}", env!("CARGO_PKG_VERSION"));
-                        let mut headers = reqwest::header::HeaderMap::new();
-                        headers.insert(
-                            reqwest::header::USER_AGENT,
-                            user_agent.parse().unwrap(),
-                        );
-
-                        #[cfg(not(target_arch = "wasm32"))]
-                        let client = {
-                            let dur = std::time::Duration::from_secs(15);
-                            reqwest::ClientBuilder::new()
-                                .connect_timeout(dur)
-                                .timeout(dur)
-                                .default_headers(headers)
-                                .build()
-                                .unwrap()
-                        };
-                        #[cfg(target_arch = "wasm32")]
-                        let client = reqwest::ClientBuilder::new()
-                            .default_headers(headers)
-                            .build()
-                            .unwrap();
-
-                        client
-                    }
-                };
-                item.items.push(get_base_url_method);
-                self.modified = true;
-            }
-        }
-
-        syn::visit_mut::visit_item_impl_mut(self, item);
-    }
-}
 
 #[cfg(feature = "tracing")]
 struct ClientTracingModifier;
