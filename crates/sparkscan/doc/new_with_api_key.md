@@ -4,7 +4,7 @@ This is the recommended method for production applications using the official Sp
 
 ## Parameters
 
-- `baseurl`: The base URL for the API (should be "https://api.sparkscan.io")
+- `baseurl`: The base URL for the API (should be "<https://api.sparkscan.io>")
 - `api_key`: Your SparkScan API key
 
 ## Example
