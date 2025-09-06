@@ -9,23 +9,48 @@ readme = "../../README.md"
 repository = "https://github.com/flashnetxyz/sparkscan-rs.git"
 homepage = "https://github.com/flashnetxyz/sparkscan-rs"
 
+[lib]
+crate-type = ["cdylib", "rlib"]
+
 [features]
 default = []
 tracing = ["dep:tracing", "dep:reqwest-tracing", "dep:reqwest-middleware", "sparkscan-client/middleware"]
+wasm = ["sparkscan-client/wasm"]
 
 [dependencies]
 futures = { version = "0.3.31" }
 sparkscan-client = { workspace = true }
-reqwest = { version = "0.12.20", features = ["json", "stream"] }
 serde = { version = "1.0.219", features = ["derive"] }
 serde_json = { version = "1.0.140" }
 chrono = { version = "0.4.41", features = ["serde"] }
 regress = { version = "0.10.3" }
 
+# rust reqwest features
+[target.'cfg(not(target_arch = "wasm32"))'.dependencies]
+reqwest = { version = "0.12.20", features = ["json", "stream", "rustls-tls"] }
+
 # Tracing
 tracing = { version = "0.1.41", optional = true }
 reqwest-middleware = { workspace = true, optional = true }
 reqwest-tracing = { version = "0.5.8", optional = true }
+
+# WASM-specific dependencies
+[target.'cfg(target_arch = "wasm32")'.dependencies]
+reqwest = { version = "0.12.20", default-features = false, features = ["json", "stream"] }
+wasm-bindgen = "0.2"
+wasm-bindgen-futures = "0.4"
+web-sys = "0.3"
+js-sys = "0.3"
+console_error_panic_hook = "0.1"
+serde-wasm-bindgen = "0.6"
+
+# Development dependencies for WASM
+[target.'cfg(target_arch = "wasm32")'.dev-dependencies]
+wasm-bindgen-test = "0.3"
+
+# Development dependencies for native
+[target.'cfg(not(target_arch = "wasm32"))'.dev-dependencies]
+tokio = { version = "1.0", features = ["full"] }
 
 [build-dependencies]
 prettyplease = { version = "0.2.34" }

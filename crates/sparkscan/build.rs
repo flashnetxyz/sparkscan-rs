@@ -38,6 +38,10 @@ fn main() {
     let mut headers_modifier = ClientHeadersModifier::new();
     headers_modifier.visit_file_mut(&mut ast);
 
+    // Add WASM-specific modifications
+    let mut wasm_modifier = WasmCompatibilityModifier::new();
+    wasm_modifier.visit_file_mut(&mut ast);
+
     #[cfg(feature = "tracing")]
     {
         let mut tracing_modifier = ClientTracingModifier;
@@ -140,6 +144,17 @@ impl syn::visit_mut::VisitMut for ClientHeadersModifier {
                             user_agent.parse().unwrap(),
                         );
 
+                        // WASM-specific client configuration
+                        // In WASM, we can't set timeouts as the browser handles them
+                        #[cfg(target_arch = "wasm32")]
+                        let client = {
+                            reqwest::ClientBuilder::new()
+                                .default_headers(headers)
+                                .build()
+                                .expect("Failed to build WASM HTTP client")
+                        };
+                        
+                        // Native client configuration with timeouts
                         #[cfg(not(target_arch = "wasm32"))]
                         let client = {
                             let dur = std::time::Duration::from_secs(15);
@@ -148,13 +163,8 @@ impl syn::visit_mut::VisitMut for ClientHeadersModifier {
                                 .timeout(dur)
                                 .default_headers(headers)
                                 .build()
-                                .unwrap()
+                                .expect("Failed to build HTTP client")
                         };
-                        #[cfg(target_arch = "wasm32")]
-                        let client = reqwest::ClientBuilder::new()
-                            .default_headers(headers)
-                            .build()
-                            .unwrap();
 
                         client
                     }
@@ -164,6 +174,68 @@ impl syn::visit_mut::VisitMut for ClientHeadersModifier {
             }
         }
 
+        syn::visit_mut::visit_item_impl_mut(self, item);
+    }
+}
+
+/// Modifier to ensure WASM compatibility in generated code
+struct WasmCompatibilityModifier {
+    modified: bool,
+}
+
+impl WasmCompatibilityModifier {
+    fn new() -> Self {
+        Self { modified: false }
+    }
+}
+
+impl syn::visit_mut::VisitMut for WasmCompatibilityModifier {
+    fn visit_item_fn_mut(&mut self, item: &mut syn::ItemFn) {
+        // Add wasm-bindgen attributes to public async functions for better WASM interop
+        if item.vis == syn::Visibility::Public(syn::token::Pub::default()) {
+            if item.sig.asyncness.is_some() {
+                // Check if this function might be useful in WASM context
+                let fn_name = item.sig.ident.to_string();
+                if fn_name.contains("send") || fn_name.contains("execute") {
+                    // Add conditional wasm-bindgen attribute
+                    let wasm_attr: syn::Attribute = parse_quote! {
+                        #[cfg_attr(target_arch = "wasm32", wasm_bindgen)]
+                    };
+                    item.attrs.push(wasm_attr);
+                    self.modified = true;
+                }
+            }
+        }
+        
+        syn::visit_mut::visit_item_fn_mut(self, item);
+    }
+    
+    fn visit_item_impl_mut(&mut self, item: &mut syn::ItemImpl) {
+        // Look for methods that might need WASM-specific handling
+        for impl_item in &mut item.items {
+            if let syn::ImplItem::Fn(method) = impl_item {
+                let method_name = method.sig.ident.to_string();
+                
+                // Add WASM-friendly error handling to send methods
+                if method_name == "send" && method.sig.asyncness.is_some() {
+                    // Ensure proper error handling for WASM
+                    let has_wasm_error_attr = method.attrs.iter().any(|attr| {
+                        attr.path().segments.last()
+                            .map(|s| s.ident == "wasm_bindgen")
+                            .unwrap_or(false)
+                    });
+                    
+                    if !has_wasm_error_attr {
+                        let wasm_error_attr: syn::Attribute = parse_quote! {
+                            #[cfg_attr(target_arch = "wasm32", allow(clippy::future_not_send))]
+                        };
+                        method.attrs.push(wasm_error_attr);
+                        self.modified = true;
+                    }
+                }
+            }
+        }
+        
         syn::visit_mut::visit_item_impl_mut(self, item);
     }
 }

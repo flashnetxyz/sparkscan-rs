@@ -11,6 +11,13 @@ use futures_core::Stream;
 use reqwest::RequestBuilder;
 use serde::{de::DeserializeOwned, ser::SerializeStruct, Serialize};
 
+// WASM-specific imports
+#[cfg(target_arch = "wasm32")]
+use wasm_bindgen::prelude::*;
+
+// Note: wasm_bindgen_futures::spawn_local is available but not used in this module
+// It can be imported by users when needed for spawning async tasks in WASM
+
 #[cfg(not(target_arch = "wasm32"))]
 type InnerByteStream = std::pin::Pin<Box<dyn Stream<Item = reqwest::Result<Bytes>> + Send + Sync>>;
 
@@ -516,6 +523,34 @@ where
             Error::InvalidResponsePayload(_b, e) => Some(e),
             _ => None,
         }
+    }
+}
+
+/// WASM-specific error conversion utilities
+#[cfg(target_arch = "wasm32")]
+impl<E> From<Error<E>> for JsValue
+where
+    E: std::fmt::Debug,
+{
+    fn from(error: Error<E>) -> Self {
+        JsValue::from_str(&format!("{:?}", error))
+    }
+}
+
+/// WASM-specific helper for converting results to JsValue
+#[cfg(target_arch = "wasm32")]
+pub trait IntoJsResult<T> {
+    /// Converts a Rust Result into a JavaScript-compatible Result with JsValue error
+    fn into_js_result(self) -> Result<T, JsValue>;
+}
+
+#[cfg(target_arch = "wasm32")]
+impl<T, E> IntoJsResult<T> for Result<T, Error<E>>
+where
+    E: std::fmt::Debug,
+{
+    fn into_js_result(self) -> Result<T, JsValue> {
+        self.map_err(|e| JsValue::from_str(&format!("{:?}", e)))
     }
 }
 
