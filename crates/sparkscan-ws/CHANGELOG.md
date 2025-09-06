@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.5.2](https://github.com/flashnetxyz/sparkscan-rs/compare/sparkscan-ws_v0.5.1...sparkscan-ws_v0.5.2) - 2025-09-06
+
+### Other
+
+- *(sparkscan)* Add API key authentication support ([#18](https://github.com/flashnetxyz/sparkscan-rs/pull/18))
+
 ## [0.5.1](https://github.com/flashnetxyz/sparkscan-rs/compare/sparkscan-ws_v0.5.0...sparkscan-ws_v0.5.1) - 2025-08-07
 
 ### Other
