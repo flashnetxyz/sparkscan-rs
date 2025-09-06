@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.2](https://github.com/flashnetxyz/sparkscan-rs/compare/sparkscan_v0.3.1...sparkscan_v0.3.2) - 2025-09-06
+
+### Added
+
+- *(sparkscan)* update Sparkscan API definition ([#13](https://github.com/flashnetxyz/sparkscan-rs/pull/13))
+
 ## [0.3.1](https://github.com/flashnetxyz/sparkscan-rs/compare/sparkscan_v0.3.0...sparkscan_v0.3.1) - 2025-08-17
 
 ### Other
