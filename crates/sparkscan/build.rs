@@ -28,6 +28,7 @@ fn get_doc_filename_for_method(method_name: &str) -> Option<&'static str> {
         // Client methods
         "new" => Some("new.md"),
         "new_with_client" => Some("new_with_client.md"),
+        "new_with_api_key" => Some("new_with_api_key.md"),
         
         // Root endpoint
         "root_get" => Some("root_get.md"),
@@ -212,7 +213,44 @@ impl syn::visit_mut::VisitMut for ClientHeadersModifier {
                         client
                     }
                 };
+                
+                // Add new_with_api_key method
+                let new_with_api_key_method: syn::ImplItem = parse_quote! {
+                    /// Create a new client with an API key for production use with api.sparkscan.io
+                    pub fn new_with_api_key(baseurl: &str, api_key: &str) -> Self {
+                        let user_agent = format!("sparkscan-rs/{}", env!("CARGO_PKG_VERSION"));
+                        let mut headers = reqwest::header::HeaderMap::new();
+                        headers.insert(
+                            reqwest::header::USER_AGENT,
+                            user_agent.parse().unwrap(),
+                        );
+                        headers.insert(
+                            "x-api-key",
+                            api_key.parse().unwrap(),
+                        );
+
+                        #[cfg(not(target_arch = "wasm32"))]
+                        let client = {
+                            let dur = std::time::Duration::from_secs(15);
+                            reqwest::ClientBuilder::new()
+                                .connect_timeout(dur)
+                                .timeout(dur)
+                                .default_headers(headers)
+                                .build()
+                                .unwrap()
+                        };
+                        #[cfg(target_arch = "wasm32")]
+                        let client = reqwest::ClientBuilder::new()
+                            .default_headers(headers)
+                            .build()
+                            .unwrap();
+
+                        Self::new_with_client(baseurl, client)
+                    }
+                };
+                
                 item.items.push(get_base_url_method);
+                item.items.push(new_with_api_key_method);
                 self.modified = true;
             }
         }
@@ -303,6 +341,42 @@ impl syn::visit_mut::VisitMut for ClientTracingModifier {
                         "new" => {
                             method.block = parse_quote! {{
                                 let client = Self::base_client();
+
+                                let client = reqwest_middleware::ClientBuilder::new(client)
+                                    .with(reqwest_tracing::TracingMiddleware::default())
+                                    .build();
+
+                                Self::new_with_client(baseurl, client)
+                            }};
+                        }
+                        "new_with_api_key" => {
+                            method.block = parse_quote! {{
+                                let user_agent = format!("sparkscan-rs/{}", env!("CARGO_PKG_VERSION"));
+                                let mut headers = reqwest::header::HeaderMap::new();
+                                headers.insert(
+                                    reqwest::header::USER_AGENT,
+                                    user_agent.parse().unwrap(),
+                                );
+                                headers.insert(
+                                    "x-api-key",
+                                    api_key.parse().unwrap(),
+                                );
+
+                                #[cfg(not(target_arch = "wasm32"))]
+                                let client = {
+                                    let dur = std::time::Duration::from_secs(15);
+                                    reqwest::ClientBuilder::new()
+                                        .connect_timeout(dur)
+                                        .timeout(dur)
+                                        .default_headers(headers)
+                                        .build()
+                                        .unwrap()
+                                };
+                                #[cfg(target_arch = "wasm32")]
+                                let client = reqwest::ClientBuilder::new()
+                                    .default_headers(headers)
+                                    .build()
+                                    .unwrap();
 
                                 let client = reqwest_middleware::ClientBuilder::new(client)
                                     .with(reqwest_tracing::TracingMiddleware::default())
