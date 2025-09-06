@@ -16,6 +16,8 @@ Returns recent transactions from all addresses, useful for:
 
 ## Example
 
+> **Note**: The values used in this example are for documentation testing purposes.
+
 ```rust
 use sparkscan::{Client, reqwest};
 

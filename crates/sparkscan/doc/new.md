@@ -13,6 +13,8 @@ This method creates a client using the default reqwest::Client configuration wit
 
 ## Example
 
+> **Note**: This example shows basic client creation for development/testing purposes.
+
 ```rust
 use sparkscan::Client;
 

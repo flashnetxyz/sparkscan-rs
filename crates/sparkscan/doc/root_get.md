@@ -8,6 +8,8 @@ Returns a simple response to verify API connectivity, useful for:
 
 ## Example
 
+> **Note**: This example demonstrates basic API connectivity testing.
+
 ```rust
 use sparkscan::{Client, reqwest};
 

@@ -15,6 +15,8 @@ Returns holders of a token with their balances and portfolio percentages, useful
 
 ## Example
 
+> **Note**: The token identifier and other values used in this example are for documentation testing purposes.
+
 ```rust
 use sparkscan::{Client, reqwest};
 

@@ -16,6 +16,8 @@ Retrieves all transactions associated with an address, including:
 
 ## Example
 
+> **Note**: The address and other values used in this example are for documentation testing purposes.
+
 ```rust
 use sparkscan::{Client, reqwest};
 

@@ -15,6 +15,8 @@ Returns a leaderboard of tokens sorted by various metrics, useful for:
 
 ## Example
 
+> **Note**: The values used in this example are for documentation testing purposes.
+
 ```rust
 use sparkscan::{Client, reqwest};
 

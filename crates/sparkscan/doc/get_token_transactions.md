@@ -15,6 +15,8 @@ Returns all transactions involving a specific token, including:
 
 ## Example
 
+> **Note**: The token identifier and other values used in this example are for documentation testing purposes.
+
 ```rust
 use sparkscan::{Client, reqwest};
 

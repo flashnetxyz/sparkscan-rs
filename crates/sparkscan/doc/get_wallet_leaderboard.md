@@ -13,6 +13,8 @@ Returns a ranked list of wallets sorted by their total portfolio value, useful f
 
 ## Example
 
+> **Note**: The values used in this example are for documentation testing purposes.
+
 ```rust
 use sparkscan::{Client, reqwest};
 

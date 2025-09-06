@@ -7,6 +7,8 @@ as well as port and a path stem if applicable.
 
 When using the official SparkScan API at `api.sparkscan.io`, you must configure the `x-api-key` header:
 
+> **Note**: Replace "your-api-key-here" with your actual SparkScan API key.
+
 ```rust
 use sparkscan::reqwest;
 use sparkscan::Client;

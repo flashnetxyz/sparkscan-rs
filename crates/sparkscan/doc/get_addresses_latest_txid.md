@@ -15,6 +15,8 @@ Accepts up to 100 Bitcoin addresses per request.
 
 ## Example
 
+> **Note**: The Bitcoin addresses and other values used in this example are for documentation testing purposes.
+
 ```rust
 use sparkscan::{Client, reqwest};
 

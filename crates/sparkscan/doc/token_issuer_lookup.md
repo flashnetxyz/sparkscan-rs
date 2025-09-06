@@ -15,6 +15,8 @@ Accepts up to 100 items per request for efficient batch processing.
 
 ## Example
 
+> **Note**: The public keys and other values used in this example are for documentation testing purposes.
+
 ```rust
 use sparkscan::{Client, reqwest};
 
