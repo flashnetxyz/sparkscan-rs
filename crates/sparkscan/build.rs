@@ -8,9 +8,59 @@ cfg_if::cfg_if! {
 
 use schemars::schema::{InstanceType, SchemaObject};
 
+/// Read documentation from a markdown file and convert it to doc attributes
+fn read_doc_from_file(filename: &str) -> Vec<syn::Attribute> {
+    let doc_path = std::path::Path::new("doc").join(filename);
+    let content = std::fs::read_to_string(&doc_path)
+        .unwrap_or_else(|_| panic!("Failed to read documentation file: {:?}", doc_path));
+    
+    content
+        .lines()
+        .map(|line| {
+            syn::parse_quote! { #[doc = #line] }
+        })
+        .collect()
+}
+
+/// Get documentation filename for a method name
+fn get_doc_filename_for_method(method_name: &str) -> Option<&'static str> {
+    match method_name {
+        // Client methods
+        "new" => Some("new.md"),
+        "new_with_client" => Some("new_with_client.md"),
+        
+        // Root endpoint
+        "root_get" => Some("root_get.md"),
+        
+        // Address endpoints
+        "address_summary_v1_address_address_get" => Some("address_summary.md"),
+        "get_address_transactions_v1_address_address_transactions_get" => Some("get_address_transactions.md"),
+        "get_address_tokens_v1_address_address_tokens_get" => Some("get_address_tokens.md"),
+        
+        // Transaction endpoints
+        "get_latest_transactions_v1_tx_latest_get" => Some("get_latest_transactions.md"),
+        
+        // Stats endpoints
+        "get_wallet_leaderboard_v1_stats_leaderboard_wallets_get" => Some("get_wallet_leaderboard.md"),
+        "get_token_leaderboard_v1_stats_leaderboard_tokens_get" => Some("get_token_leaderboard.md"),
+        
+        // Token endpoints
+        "get_token_transactions_v1_tokens_identifier_transactions_get" => Some("get_token_transactions.md"),
+        "get_token_holders_v1_tokens_identifier_holders_get" => Some("get_token_holders.md"),
+        "token_issuer_lookup_v1_tokens_issuer_lookup_post" => Some("token_issuer_lookup.md"),
+        
+        // Bitcoin endpoints
+        "get_addresses_latest_txid_v1_bitcoin_addresses_latest_txid_post" => Some("get_addresses_latest_txid.md"),
+        
+        
+        _ => None,
+    }
+}
+
 fn main() {
     let src = "./openapi.json";
     println!("cargo:rerun-if-changed={}", src);
+    println!("cargo:rerun-if-changed=doc/");
 
     let file = std::fs::File::open(src).unwrap();
     let spec = serde_json::from_reader(file).unwrap();
@@ -37,6 +87,9 @@ fn main() {
 
     let mut headers_modifier = ClientHeadersModifier::new();
     headers_modifier.visit_file_mut(&mut ast);
+
+    let mut doc_modifier = ClientDocumentationModifier::new();
+    doc_modifier.visit_file_mut(&mut ast);
 
     #[cfg(feature = "tracing")]
     {
@@ -161,6 +214,46 @@ impl syn::visit_mut::VisitMut for ClientHeadersModifier {
                 };
                 item.items.push(get_base_url_method);
                 self.modified = true;
+            }
+        }
+
+        syn::visit_mut::visit_item_impl_mut(self, item);
+    }
+}
+
+struct ClientDocumentationModifier {
+    modified: bool,
+}
+
+impl ClientDocumentationModifier {
+    fn new() -> Self {
+        Self { modified: false }
+    }
+}
+
+impl syn::visit_mut::VisitMut for ClientDocumentationModifier {
+    fn visit_item_impl_mut(&mut self, item: &mut ItemImpl) {
+        let is_client_impl = matches!(&item.self_ty.as_ref(),
+            syn::Type::Path(p) if p.path.is_ident("Client"));
+
+        if is_client_impl && item.trait_.is_none() {
+            for impl_item in &mut item.items {
+                if let syn::ImplItem::Fn(method) = impl_item {
+                    let method_name = method.sig.ident.to_string();
+                    
+                    // Apply documentation from external files
+                    if let Some(doc_filename) = get_doc_filename_for_method(&method_name) {
+                        // Remove existing documentation attributes (but preserve other attributes)
+                        method.attrs.retain(|attr| {
+                            !attr.path().is_ident("doc")
+                        });
+                        
+                        // Add documentation from file
+                        let doc_attrs = read_doc_from_file(doc_filename);
+                        method.attrs.extend(doc_attrs);
+                        self.modified = true;
+                    }
+                }
             }
         }
 

@@ -2076,6 +2076,7 @@ dependencies = [
  "serde_json",
  "sparkscan-client",
  "syn",
+ "tokio-test",
  "tracing",
 ]
 
