@@ -5,19 +5,18 @@ as well as port and a path stem if applicable.
 
 ## Usage with api.sparkscan.io
 
-When using the official SparkScan API at `api.sparkscan.io`, you must configure the `x-api-key` header:
+For most use cases with `api.sparkscan.io`, consider using `new_with_api_key` instead for simpler setup.
 
-> **Note**: Replace "your-api-key-here" with your actual SparkScan API key.
+For advanced configurations, you can manually configure the reqwest::Client:
+
+> **Note**: This example shows advanced client configuration. For simple API key setup, use `new_with_api_key`.
 
 ```rust
-use sparkscan::reqwest;
 use sparkscan::Client;
 
-let mut headers = reqwest::header::HeaderMap::new();
-headers.insert("x-api-key", "your-api-key-here".parse().unwrap());
-
+// Advanced configuration example
 let client = reqwest::ClientBuilder::new()
-    .default_headers(headers)
+    .timeout(std::time::Duration::from_secs(30))
     .build()
     .unwrap();
 

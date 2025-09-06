@@ -8,10 +8,8 @@
 use sparkscan_ws::{
     subscription::SubscriptionManager,
     types::{
-        balance::{Network as BalanceNetwork},
-        parse_message_for_topic,
-        token_balance::{Network as TokenBalanceNetwork},
-        transaction::{Network as TransactionNetwork},
+        balance::Network as BalanceNetwork, parse_message_for_topic,
+        token_balance::Network as TokenBalanceNetwork, transaction::Network as TransactionNetwork,
     },
     SparkScanMessage, SparkScanWsClient, SparkScanWsConfig, Topic,
 };
@@ -343,15 +341,22 @@ fn test_fallback_transaction_parsing_integration() {
     }"#;
 
     let result = parse_message_for_topic(&Topic::Transactions, complex_transaction_json.as_bytes());
-    assert!(result.is_ok(), "Failed to parse complex transaction: {:?}", result);
+    assert!(
+        result.is_ok(),
+        "Failed to parse complex transaction: {:?}",
+        result
+    );
 
     if let Ok(SparkScanMessage::Transaction(tx)) = result {
-        assert_eq!(tx.id, "8a090c65ea4d5649eb5e26deea1533276751bbfc5ef522b3a22f5b429262f417");
+        assert_eq!(
+            tx.id,
+            "8a090c65ea4d5649eb5e26deea1533276751bbfc5ef522b3a22f5b429262f417"
+        );
         assert_eq!(format!("{:?}", tx.network), "Regtest");
         assert_eq!(format!("{:?}", tx.type_), "TokenMultiTransfer");
         assert_eq!(format!("{:?}", tx.status), "Pending");
         assert_eq!(tx.token_amount, Some("20999999998109000".to_string()));
-        
+
         // Verify token_io_details are preserved
         if let Some(token_io_details) = &tx.token_io_details {
             // Should contain either original data or be restructured into fallback format
@@ -371,10 +376,10 @@ fn test_double_encoded_json_parsing_integration() {
         "processed_at": "2025-08-06T16:28:42.955000Z",
         "amount_sats": "500"
     });
-    
+
     // Create double-encoded JSON string
     let double_encoded_json = serde_json::to_string(&transaction_data).unwrap();
-    
+
     let result = parse_message_for_topic(&Topic::Transactions, double_encoded_json.as_bytes());
     assert!(result.is_ok());
 
@@ -389,46 +394,62 @@ fn test_double_encoded_json_parsing_integration() {
 fn test_malformed_json_graceful_handling() {
     // Test that malformed JSON is handled gracefully
     let malformed_json = r#"{"id": "test", "incomplete": }"#;
-    
+
     let result = parse_message_for_topic(&Topic::Transactions, malformed_json.as_bytes());
     assert!(result.is_err());
-    
+
     // Error should be related to JSON parsing, not panic
     if let Err(e) = result {
         let error_msg = format!("{}", e);
-        assert!(error_msg.contains("JSON") || error_msg.contains("decode") || error_msg.contains("serialization"));
+        assert!(
+            error_msg.contains("JSON")
+                || error_msg.contains("decode")
+                || error_msg.contains("serialization")
+        );
     }
 }
 
-#[test] 
+#[test]
 fn test_mixed_message_type_parsing() {
     // Test parsing different message types with the same function
     use std::collections::HashMap;
-    
+
     let test_cases: HashMap<Topic, &str> = [
-        (Topic::Balances, r#"{
+        (
+            Topic::Balances,
+            r#"{
             "address": "sp1pgssx6rwqjer2xsmhe5x6mg6ng0cfu77q58vtcz9f0emuuzftnl7zvv6qujs5s",
             "network": "MAINNET",
             "soft_balance": "100",
             "hard_balance": "90",
             "processed_at": "2025-08-06T16:28:42.955000Z"
-        }"#),
-        (Topic::TokenBalances, r#"{
+        }"#,
+        ),
+        (
+            Topic::TokenBalances,
+            r#"{
             "network": "MAINNET",
             "address": "sp1pgssx6rwqjer2xsmhe5x6mg6ng0cfu77q58vtcz9f0emuuzftnl7zvv6qujs5s",
             "token_address": "btkn1daywtenlww42njymqzyegvcwuy3p9f26zknme0srxa7tagewvuys86h553",
             "balance": "1000",
             "processed_at": "2025-08-06T16:28:42.955000Z"
-        }"#),
-        (Topic::Transactions, r#"{
+        }"#,
+        ),
+        (
+            Topic::Transactions,
+            r#"{
             "id": "mixed_test_transaction",
             "network": "REGTEST",
             "type": "spark_to_spark",
             "status": "sent",
             "processed_at": "2025-08-06T16:28:42.955000Z",
             "amount_sats": "100"
-        }"#),
-    ].iter().cloned().collect();
+        }"#,
+        ),
+    ]
+    .iter()
+    .cloned()
+    .collect();
 
     for (topic, json_data) in test_cases {
         let result = parse_message_for_topic(&topic, json_data.as_bytes());
@@ -436,9 +457,9 @@ fn test_mixed_message_type_parsing() {
 
         let message = result.unwrap();
         match (&topic, &message) {
-            (Topic::Balances, SparkScanMessage::Balance(_)) => {},
-            (Topic::TokenBalances, SparkScanMessage::TokenBalance(_)) => {},
-            (Topic::Transactions, SparkScanMessage::Transaction(_)) => {},
+            (Topic::Balances, SparkScanMessage::Balance(_)) => {}
+            (Topic::TokenBalances, SparkScanMessage::TokenBalance(_)) => {}
+            (Topic::Transactions, SparkScanMessage::Transaction(_)) => {}
             _ => panic!("Message type mismatch for topic {:?}", topic),
         }
     }
@@ -459,21 +480,30 @@ fn test_envelope_wrapped_messages() {
     let data_wrapped = serde_json::json!({
         "data": serde_json::to_string(&transaction_data).unwrap()
     });
-    let result1 = parse_message_for_topic(&Topic::Transactions, serde_json::to_string(&data_wrapped).unwrap().as_bytes());
+    let result1 = parse_message_for_topic(
+        &Topic::Transactions,
+        serde_json::to_string(&data_wrapped).unwrap().as_bytes(),
+    );
     assert!(result1.is_ok());
 
-    // Test Case 2: Data wrapped in "payload" field  
+    // Test Case 2: Data wrapped in "payload" field
     let payload_wrapped = serde_json::json!({
         "payload": transaction_data.clone()
     });
-    let result2 = parse_message_for_topic(&Topic::Transactions, serde_json::to_string(&payload_wrapped).unwrap().as_bytes());
+    let result2 = parse_message_for_topic(
+        &Topic::Transactions,
+        serde_json::to_string(&payload_wrapped).unwrap().as_bytes(),
+    );
     assert!(result2.is_ok());
 
     // Test Case 3: Data wrapped in "message" field
     let message_wrapped = serde_json::json!({
         "message": serde_json::to_string(&transaction_data).unwrap()
     });
-    let result3 = parse_message_for_topic(&Topic::Transactions, serde_json::to_string(&message_wrapped).unwrap().as_bytes());
+    let result3 = parse_message_for_topic(
+        &Topic::Transactions,
+        serde_json::to_string(&message_wrapped).unwrap().as_bytes(),
+    );
     assert!(result3.is_ok());
 
     // Verify all parsed correctly

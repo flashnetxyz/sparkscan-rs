@@ -11,19 +11,14 @@ Returns a simple response to verify API connectivity, useful for:
 > **Note**: This example demonstrates basic API connectivity testing.
 
 ```rust
-use sparkscan::{Client, reqwest};
+use sparkscan::Client;
 
 tokio_test::block_on(async {
-    // Configure client with API key
-    let mut headers = reqwest::header::HeaderMap::new();
-    headers.insert("x-api-key", std::env::var("X_API_KEY").unwrap_or("test".to_string()).parse().unwrap());
-
-    let http_client = reqwest::ClientBuilder::new()
-        .default_headers(headers)
-        .build()
-        .unwrap();
-
-    let client = Client::new_with_client("https://api.sparkscan.io", http_client);
+    // Create client with API key from environment
+    let client = Client::new_with_api_key(
+        "https://api.sparkscan.io",
+        &std::env::var("X_API_KEY").unwrap_or("test".to_string())
+    );
     let response = client
         .root_get()
         .send()

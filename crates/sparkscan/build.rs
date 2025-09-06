@@ -13,7 +13,7 @@ fn read_doc_from_file(filename: &str) -> Vec<syn::Attribute> {
     let doc_path = std::path::Path::new("doc").join(filename);
     let content = std::fs::read_to_string(&doc_path)
         .unwrap_or_else(|_| panic!("Failed to read documentation file: {:?}", doc_path));
-    
+
     content
         .lines()
         .map(|line| {
@@ -28,31 +28,39 @@ fn get_doc_filename_for_method(method_name: &str) -> Option<&'static str> {
         // Client methods
         "new" => Some("new.md"),
         "new_with_client" => Some("new_with_client.md"),
-        
+        "new_with_api_key" => Some("new_with_api_key.md"),
+
         // Root endpoint
         "root_get" => Some("root_get.md"),
-        
+
         // Address endpoints
         "address_summary_v1_address_address_get" => Some("address_summary.md"),
-        "get_address_transactions_v1_address_address_transactions_get" => Some("get_address_transactions.md"),
+        "get_address_transactions_v1_address_address_transactions_get" => {
+            Some("get_address_transactions.md")
+        }
         "get_address_tokens_v1_address_address_tokens_get" => Some("get_address_tokens.md"),
-        
+
         // Transaction endpoints
         "get_latest_transactions_v1_tx_latest_get" => Some("get_latest_transactions.md"),
-        
+
         // Stats endpoints
-        "get_wallet_leaderboard_v1_stats_leaderboard_wallets_get" => Some("get_wallet_leaderboard.md"),
+        "get_wallet_leaderboard_v1_stats_leaderboard_wallets_get" => {
+            Some("get_wallet_leaderboard.md")
+        }
         "get_token_leaderboard_v1_stats_leaderboard_tokens_get" => Some("get_token_leaderboard.md"),
-        
+
         // Token endpoints
-        "get_token_transactions_v1_tokens_identifier_transactions_get" => Some("get_token_transactions.md"),
+        "get_token_transactions_v1_tokens_identifier_transactions_get" => {
+            Some("get_token_transactions.md")
+        }
         "get_token_holders_v1_tokens_identifier_holders_get" => Some("get_token_holders.md"),
         "token_issuer_lookup_v1_tokens_issuer_lookup_post" => Some("token_issuer_lookup.md"),
-        
+
         // Bitcoin endpoints
-        "get_addresses_latest_txid_v1_bitcoin_addresses_latest_txid_post" => Some("get_addresses_latest_txid.md"),
-        
-        
+        "get_addresses_latest_txid_v1_bitcoin_addresses_latest_txid_post" => {
+            Some("get_addresses_latest_txid.md")
+        }
+
         _ => None,
     }
 }
@@ -67,7 +75,7 @@ fn main() {
 
     let mut settings = progenitor::GenerationSettings::new();
     settings.with_interface(progenitor::InterfaceStyle::Builder);
-    
+
     // Replace all integer schemas with i128
     settings.with_conversion(
         SchemaObject {
@@ -212,7 +220,44 @@ impl syn::visit_mut::VisitMut for ClientHeadersModifier {
                         client
                     }
                 };
+
+                // Add new_with_api_key method
+                let new_with_api_key_method: syn::ImplItem = parse_quote! {
+                    /// Create a new client with an API key for production use with api.sparkscan.io
+                    pub fn new_with_api_key(baseurl: &str, api_key: &str) -> Self {
+                        let user_agent = format!("sparkscan-rs/{}", env!("CARGO_PKG_VERSION"));
+                        let mut headers = reqwest::header::HeaderMap::new();
+                        headers.insert(
+                            reqwest::header::USER_AGENT,
+                            user_agent.parse().unwrap(),
+                        );
+                        headers.insert(
+                            "x-api-key",
+                            api_key.parse().unwrap(),
+                        );
+
+                        #[cfg(not(target_arch = "wasm32"))]
+                        let client = {
+                            let dur = std::time::Duration::from_secs(15);
+                            reqwest::ClientBuilder::new()
+                                .connect_timeout(dur)
+                                .timeout(dur)
+                                .default_headers(headers)
+                                .build()
+                                .unwrap()
+                        };
+                        #[cfg(target_arch = "wasm32")]
+                        let client = reqwest::ClientBuilder::new()
+                            .default_headers(headers)
+                            .build()
+                            .unwrap();
+
+                        Self::new_with_client(baseurl, client)
+                    }
+                };
+
                 item.items.push(get_base_url_method);
+                item.items.push(new_with_api_key_method);
                 self.modified = true;
             }
         }
@@ -240,14 +285,12 @@ impl syn::visit_mut::VisitMut for ClientDocumentationModifier {
             for impl_item in &mut item.items {
                 if let syn::ImplItem::Fn(method) = impl_item {
                     let method_name = method.sig.ident.to_string();
-                    
+
                     // Apply documentation from external files
                     if let Some(doc_filename) = get_doc_filename_for_method(&method_name) {
                         // Remove existing documentation attributes (but preserve other attributes)
-                        method.attrs.retain(|attr| {
-                            !attr.path().is_ident("doc")
-                        });
-                        
+                        method.attrs.retain(|attr| !attr.path().is_ident("doc"));
+
                         // Add documentation from file
                         let doc_attrs = read_doc_from_file(doc_filename);
                         method.attrs.extend(doc_attrs);
@@ -303,6 +346,42 @@ impl syn::visit_mut::VisitMut for ClientTracingModifier {
                         "new" => {
                             method.block = parse_quote! {{
                                 let client = Self::base_client();
+
+                                let client = reqwest_middleware::ClientBuilder::new(client)
+                                    .with(reqwest_tracing::TracingMiddleware::default())
+                                    .build();
+
+                                Self::new_with_client(baseurl, client)
+                            }};
+                        }
+                        "new_with_api_key" => {
+                            method.block = parse_quote! {{
+                                let user_agent = format!("sparkscan-rs/{}", env!("CARGO_PKG_VERSION"));
+                                let mut headers = reqwest::header::HeaderMap::new();
+                                headers.insert(
+                                    reqwest::header::USER_AGENT,
+                                    user_agent.parse().unwrap(),
+                                );
+                                headers.insert(
+                                    "x-api-key",
+                                    api_key.parse().unwrap(),
+                                );
+
+                                #[cfg(not(target_arch = "wasm32"))]
+                                let client = {
+                                    let dur = std::time::Duration::from_secs(15);
+                                    reqwest::ClientBuilder::new()
+                                        .connect_timeout(dur)
+                                        .timeout(dur)
+                                        .default_headers(headers)
+                                        .build()
+                                        .unwrap()
+                                };
+                                #[cfg(target_arch = "wasm32")]
+                                let client = reqwest::ClientBuilder::new()
+                                    .default_headers(headers)
+                                    .build()
+                                    .unwrap();
 
                                 let client = reqwest_middleware::ClientBuilder::new(client)
                                     .with(reqwest_tracing::TracingMiddleware::default())

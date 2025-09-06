@@ -19,19 +19,14 @@ Returns recent transactions from all addresses, useful for:
 > **Note**: The values used in this example are for documentation testing purposes.
 
 ```rust
-use sparkscan::{Client, reqwest};
+use sparkscan::Client;
 
 tokio_test::block_on(async {
-    // Configure client with API key
-    let mut headers = reqwest::header::HeaderMap::new();
-    headers.insert("x-api-key", std::env::var("X_API_KEY").unwrap_or("test".to_string()).parse().unwrap());
-
-    let http_client = reqwest::ClientBuilder::new()
-        .default_headers(headers)
-        .build()
-        .unwrap();
-
-    let client = Client::new_with_client("https://api.sparkscan.io", http_client);
+    // Create client with API key from environment
+    let client = Client::new_with_api_key(
+        "https://api.sparkscan.io",
+        &std::env::var("X_API_KEY").unwrap_or("test".to_string())
+    );
     let response = client
         .get_latest_transactions_v1_tx_latest_get()
         .network("MAINNET")
