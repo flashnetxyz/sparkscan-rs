@@ -4,9 +4,8 @@
 mod tests {
     use sparkscan_ws::{
         types::{
-            balance::{Network as BalanceNetwork},
-            parse_message_for_topic,
-            token_balance::{Network as TokenBalanceNetwork},
+            balance::Network as BalanceNetwork, parse_message_for_topic,
+            token_balance::Network as TokenBalanceNetwork,
         },
         SparkScanMessage, SparkScanWsClient, SparkScanWsConfig, Topic,
     };
@@ -268,7 +267,10 @@ mod tests {
         });
 
         // This should fail gracefully since we don't handle triple-nested structures
-        let result = parse_message_for_topic(&Topic::Transactions, serde_json::to_string(&deeply_nested).unwrap().as_bytes());
+        let result = parse_message_for_topic(
+            &Topic::Transactions,
+            serde_json::to_string(&deeply_nested).unwrap().as_bytes(),
+        );
         // It might fail or succeed depending on fallback handling - either is acceptable
         // The important thing is it doesn't panic
         let _ = result;
@@ -280,7 +282,7 @@ mod tests {
 
         // Test with a large JSON payload
         let mut large_token_io_details = serde_json::Map::new();
-        
+
         // Create large arrays
         let mut inputs = Vec::new();
         let mut outputs = Vec::new();
@@ -296,7 +298,7 @@ mod tests {
                 "vout": i
             }));
         }
-        
+
         large_token_io_details.insert("inputs".to_string(), serde_json::Value::Array(inputs));
         large_token_io_details.insert("outputs".to_string(), serde_json::Value::Array(outputs));
 
@@ -309,7 +311,12 @@ mod tests {
             "token_io_details": large_token_io_details
         });
 
-        let result = parse_message_for_topic(&Topic::Transactions, serde_json::to_string(&large_transaction).unwrap().as_bytes());
+        let result = parse_message_for_topic(
+            &Topic::Transactions,
+            serde_json::to_string(&large_transaction)
+                .unwrap()
+                .as_bytes(),
+        );
         assert!(result.is_ok());
 
         if let Ok(sparkscan_ws::SparkScanMessage::Transaction(tx)) = result {
@@ -318,7 +325,7 @@ mod tests {
         }
     }
 
-    #[test] 
+    #[test]
     fn test_unicode_and_special_characters() {
         use sparkscan_ws::types::parse_message_for_topic;
 
@@ -326,7 +333,7 @@ mod tests {
         let unicode_transaction = serde_json::json!({
             "id": "unicode_test_🚀",
             "network": "REGTEST",
-            "type": "spark_to_spark", 
+            "type": "spark_to_spark",
             "status": "confirmed",
             "processed_at": "2025-08-06T16:28:42.955000Z",
             "from_identifier": "sp1_测试_address",
@@ -334,7 +341,12 @@ mod tests {
             "custom_field": "Special chars: \"quotes\", 'apostrophes', \\backslashes\\, and émojis 🎉"
         });
 
-        let result = parse_message_for_topic(&Topic::Transactions, serde_json::to_string(&unicode_transaction).unwrap().as_bytes());
+        let result = parse_message_for_topic(
+            &Topic::Transactions,
+            serde_json::to_string(&unicode_transaction)
+                .unwrap()
+                .as_bytes(),
+        );
         assert!(result.is_ok());
 
         if let Ok(sparkscan_ws::SparkScanMessage::Transaction(tx)) = result {
@@ -354,12 +366,17 @@ mod tests {
             "id": long_string.clone(),
             "network": "REGTEST",
             "type": "spark_to_spark",
-            "status": "confirmed", 
+            "status": "confirmed",
             "processed_at": "2025-08-06T16:28:42.955000Z",
             "very_long_field": long_string.clone()
         });
 
-        let result = parse_message_for_topic(&Topic::Transactions, serde_json::to_string(&long_string_transaction).unwrap().as_bytes());
+        let result = parse_message_for_topic(
+            &Topic::Transactions,
+            serde_json::to_string(&long_string_transaction)
+                .unwrap()
+                .as_bytes(),
+        );
         assert!(result.is_ok());
 
         if let Ok(sparkscan_ws::SparkScanMessage::Transaction(tx)) = result {
@@ -377,7 +394,12 @@ mod tests {
             "to_identifier": ""
         });
 
-        let result = parse_message_for_topic(&Topic::Transactions, serde_json::to_string(&empty_strings_transaction).unwrap().as_bytes());
+        let result = parse_message_for_topic(
+            &Topic::Transactions,
+            serde_json::to_string(&empty_strings_transaction)
+                .unwrap()
+                .as_bytes(),
+        );
         assert!(result.is_ok());
 
         if let Ok(sparkscan_ws::SparkScanMessage::Transaction(tx)) = result {

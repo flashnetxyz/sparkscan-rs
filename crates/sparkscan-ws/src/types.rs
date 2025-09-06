@@ -471,7 +471,7 @@ mod tests {
             "type": "spark_to_spark"
         });
         let double_encoded = json!(serde_json::to_string(&inner_json).unwrap());
-        
+
         let result = extract_payload_data(double_encoded).unwrap();
         assert_eq!(result["id"], "test_id");
         assert_eq!(result["type"], "spark_to_spark");
@@ -487,7 +487,7 @@ mod tests {
         let wrapped = json!({
             "data": serde_json::to_string(&inner_json).unwrap()
         });
-        
+
         let result = extract_payload_data(wrapped).unwrap();
         assert_eq!(result["id"], "test_id");
         assert_eq!(result["status"], "pending");
@@ -503,7 +503,7 @@ mod tests {
         let wrapped = json!({
             "payload": inner_json.clone()
         });
-        
+
         let result = extract_payload_data(wrapped).unwrap();
         assert_eq!(result, inner_json);
     }
@@ -518,7 +518,7 @@ mod tests {
         let wrapped = json!({
             "message": serde_json::to_string(&inner_json).unwrap()
         });
-        
+
         let result = extract_payload_data(wrapped).unwrap();
         assert_eq!(result["type"], "token_multi_transfer");
         assert_eq!(result["processed_at"], "2025-08-06T16:28:42.955000Z");
@@ -532,7 +532,7 @@ mod tests {
             "network": "MAINNET",
             "type": "spark_to_lightning"
         });
-        
+
         let result = extract_payload_data(direct_json.clone()).unwrap();
         assert_eq!(result, direct_json);
     }
@@ -541,7 +541,7 @@ mod tests {
     fn test_extract_payload_data_invalid_json_string() {
         // Test invalid JSON string
         let invalid_wrapped = json!("invalid json string");
-        
+
         let result = extract_payload_data(invalid_wrapped);
         assert!(result.is_err());
     }
@@ -601,7 +601,7 @@ mod tests {
         // Test with unmapped fields that should go into token_io_details
         let json_data = json!({
             "id": "unmapped_test",
-            "network": "REGTEST", 
+            "network": "REGTEST",
             "type": "token_multi_transfer",
             "status": "confirmed",
             "processed_at": "2025-08-06T16:28:42.955000Z",
@@ -618,12 +618,12 @@ mod tests {
 
         let result = create_fallback_transaction_payload(json_data).unwrap();
         assert_eq!(result.id, "unmapped_test");
-        
+
         // Check that token_io_details contains the original data
         let token_io_details = result.token_io_details.unwrap();
         assert!(token_io_details.contains_key("original"));
         assert!(token_io_details.contains_key("unmapped_fields"));
-        
+
         // Check unmapped fields are preserved
         let unmapped = token_io_details["unmapped_fields"].as_object().unwrap();
         assert_eq!(unmapped["custom_field"], "custom_value");
@@ -649,7 +649,7 @@ mod tests {
     fn test_create_fallback_transaction_payload_invalid_object() {
         // Test with non-object JSON (should fail)
         let json_data = json!("not an object");
-        
+
         let result = create_fallback_transaction_payload(json_data);
         assert!(result.is_err());
     }
@@ -661,11 +661,11 @@ mod tests {
         let invalid_transaction_json = json!({
             "id": "fallback_test",
             "network": "REGTEST",
-            "type": "token_multi_transfer", 
+            "type": "token_multi_transfer",
             "status": "pending",
             "processed_at": "2025-08-06T16:28:42.955000Z",
             "from_identifier": "invalid_address_format_that_breaks_parsing",
-            "to_identifier": "another_invalid_address", 
+            "to_identifier": "another_invalid_address",
             "token_address": "invalid_token_address",
             "custom_data": {
                 "inputs": [{"amount": "1000"}],
@@ -675,14 +675,20 @@ mod tests {
 
         let json_str = serde_json::to_string(&invalid_transaction_json).unwrap();
         let result = parse_message_for_topic(&Topic::Transactions, json_str.as_bytes());
-        
+
         assert!(result.is_ok());
         if let Ok(SparkScanMessage::Transaction(tx)) = result {
             assert_eq!(tx.id, "fallback_test");
             // The transaction should have unmapped fields or the original data preserved
             // This validates that fallback parsing worked
-            assert_eq!(tx.from_identifier, Some("invalid_address_format_that_breaks_parsing".to_string()));
-            assert_eq!(tx.to_identifier, Some("another_invalid_address".to_string()));
+            assert_eq!(
+                tx.from_identifier,
+                Some("invalid_address_format_that_breaks_parsing".to_string())
+            );
+            assert_eq!(
+                tx.to_identifier,
+                Some("another_invalid_address".to_string())
+            );
             assert_eq!(tx.token_address, Some("invalid_token_address".to_string()));
         }
     }
@@ -698,13 +704,13 @@ mod tests {
             "processed_at": "2025-08-06T16:28:42.955000Z",
             "amount_sats": "1000"
         });
-        
+
         // Double-encode the JSON
         let double_encoded = serde_json::to_string(&transaction_data).unwrap();
-        
+
         let result = parse_message_for_topic(&Topic::Transactions, double_encoded.as_bytes());
         assert!(result.is_ok());
-        
+
         if let Ok(SparkScanMessage::Transaction(tx)) = result {
             assert_eq!(tx.id, "double_encoded_test");
             assert_eq!(tx.amount_sats, Some("1000".to_string()));
