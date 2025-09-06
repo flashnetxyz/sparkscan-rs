@@ -17,7 +17,7 @@ fn main() {
 
     let mut settings = progenitor::GenerationSettings::new();
     settings.with_interface(progenitor::InterfaceStyle::Builder);
-    
+
     // Replace all integer schemas with i128
     settings.with_conversion(
         SchemaObject {
@@ -129,16 +129,31 @@ impl syn::visit_mut::VisitMut for ClientHeadersModifier {
                 .any(|item| matches!(item, syn::ImplItem::Fn(method) if method.sig.ident == "new"));
 
             if has_new_method {
-                // Add new method to the impl block
-                let get_base_url_method: syn::ImplItem = parse_quote! {
-                    /// Get the base URL of the client
+                // Add base_client method
+                let base_client_method: syn::ImplItem = parse_quote! {
+                    /// Get the base client without API key
                     fn base_client() -> reqwest::Client {
+                        Self::base_client_with_api_key(None)
+                    }
+                };
+
+                // Add base_client_with_api_key method
+                let base_client_with_api_key_method: syn::ImplItem = parse_quote! {
+                    /// Get the base client with optional API key
+                    fn base_client_with_api_key(api_key: Option<&str>) -> reqwest::Client {
                         let user_agent = format!("sparkscan-rs/{}", env!("CARGO_PKG_VERSION"));
                         let mut headers = reqwest::header::HeaderMap::new();
                         headers.insert(
                             reqwest::header::USER_AGENT,
                             user_agent.parse().unwrap(),
                         );
+
+                        if let Some(key) = api_key {
+                            headers.insert(
+                                "x-api-key",
+                                key.parse().unwrap(),
+                            );
+                        }
 
                         #[cfg(not(target_arch = "wasm32"))]
                         let client = {
@@ -159,7 +174,19 @@ impl syn::visit_mut::VisitMut for ClientHeadersModifier {
                         client
                     }
                 };
-                item.items.push(get_base_url_method);
+
+                // Add new_with_api_key method
+                let new_with_api_key_method: syn::ImplItem = parse_quote! {
+                    /// Create a new client with API key
+                    pub fn new_with_api_key(baseurl: &str, api_key: &str) -> Self {
+                        let client = Self::base_client_with_api_key(Some(api_key));
+                        Self::new_with_client(baseurl, client)
+                    }
+                };
+
+                item.items.push(base_client_method);
+                item.items.push(base_client_with_api_key_method);
+                item.items.push(new_with_api_key_method);
                 self.modified = true;
             }
         }
@@ -231,6 +258,21 @@ impl syn::visit_mut::VisitMut for ClientTracingModifier {
                     }
                 }
             }
+
+            // Add new_with_api_key method for tracing version
+            let new_with_api_key_method: syn::ImplItem = parse_quote! {
+                /// Create a new client with API key (with tracing middleware)
+                pub fn new_with_api_key(baseurl: &str, api_key: &str) -> Self {
+                    let client = Self::base_client_with_api_key(Some(api_key));
+
+                    let client = reqwest_middleware::ClientBuilder::new(client)
+                        .with(reqwest_tracing::TracingMiddleware::default())
+                        .build();
+
+                    Self::new_with_client(baseurl, client)
+                }
+            };
+            item.items.push(new_with_api_key_method);
         } else if is_client_info_impl {
             // impl ClientInfo for Client
             for impl_item in &mut item.items {
