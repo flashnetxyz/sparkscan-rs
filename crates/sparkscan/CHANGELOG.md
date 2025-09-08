@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.6](https://github.com/flashnetxyz/sparkscan-rs/compare/sparkscan_v0.3.5...sparkscan_v0.3.6) - 2025-09-08
+
+### Other
+
+- *(sparkscan)* Specifie number schemas as float (f64)
+
 ## [0.3.5](https://github.com/flashnetxyz/sparkscan-rs/compare/sparkscan_v0.3.4...sparkscan_v0.3.5) - 2025-09-08
 
 ### Fixed
