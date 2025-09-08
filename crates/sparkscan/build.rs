@@ -165,6 +165,18 @@ fn main() {
                 v.parse::<i128>().map_err(|e| serde::de::Error::custom(format!("invalid i128 string: {}", e)))
             }
 
+            fn visit_f64<E>(self, v: f64) -> Result<i128, E>
+            where
+                E: serde::de::Error,
+            {
+                // Handle scientific notation like 2.1e23
+                if v.fract() == 0.0 && v.is_finite() {
+                    Ok(v as i128)
+                } else {
+                    Err(serde::de::Error::custom(format!("cannot convert float {} to i128: not a whole number", v)))
+                }
+            }
+
             fn visit_string<E>(self, v: String) -> Result<i128, E>
             where
                 E: serde::de::Error,
@@ -217,6 +229,18 @@ fn main() {
                 E: serde::de::Error,
             {
                 v.parse::<i128>().map(Some).map_err(|e| serde::de::Error::custom(format!("invalid i128 string: {}", e)))
+            }
+
+            fn visit_f64<E>(self, v: f64) -> Result<Option<i128>, E>
+            where
+                E: serde::de::Error,
+            {
+                // Handle scientific notation like 2.1e23
+                if v.fract() == 0.0 && v.is_finite() {
+                    Ok(Some(v as i128))
+                } else {
+                    Err(serde::de::Error::custom(format!("cannot convert float {} to i128: not a whole number", v)))
+                }
             }
 
             fn visit_string<E>(self, v: String) -> Result<Option<i128>, E>
