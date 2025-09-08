@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.7](https://github.com/flashnetxyz/sparkscan-rs/compare/sparkscan_v0.3.6...sparkscan_v0.3.7) - 2025-09-08
+
+### Added
+
+- *(sparkscan)* Handles float values when deserializing i128
+
+### Fixed
+
+- *(sparkscan)* Add custom i128 deserialization support since serde doesn't support them
+
+### Other
+
+- *(sparkscan)* fmt
+
 ## [0.3.6](https://github.com/flashnetxyz/sparkscan-rs/compare/sparkscan_v0.3.5...sparkscan_v0.3.6) - 2025-09-08
 
 ### Other
