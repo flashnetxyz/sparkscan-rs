@@ -86,6 +86,16 @@ fn main() {
         std::iter::empty(),
     );
 
+    // Replace all number schemas with f64
+    settings.with_conversion(
+        SchemaObject {
+            instance_type: Some(InstanceType::Number.into()),
+            ..Default::default()
+        },
+        "f64",
+        std::iter::empty(),
+    );
+
     let mut generator = progenitor::Generator::new(&settings);
     let tokens = generator.generate_tokens(&spec).unwrap();
     let mut ast = syn::parse2(tokens).unwrap();
