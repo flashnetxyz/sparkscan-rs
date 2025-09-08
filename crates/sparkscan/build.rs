@@ -120,6 +120,9 @@ fn main() {
     let mut doc_modifier = ClientDocumentationModifier::new();
     doc_modifier.visit_file_mut(&mut ast);
 
+    let mut untagged_i128_injector = UntaggedI128Injector;
+    untagged_i128_injector.visit_file_mut(&mut ast);
+
     #[cfg(feature = "tracing")]
     {
         let mut tracing_modifier = ClientTracingModifier;
@@ -129,7 +132,112 @@ fn main() {
         builder_instrumenter.visit_file_mut(&mut ast);
     }
 
-    let content = prettyplease::unparse(&ast);
+    // Generate the code first
+    let mut content = prettyplease::unparse(&ast);
+    
+    // Inject the custom i128 deserializer function inside the types module
+    let i128_deserializer = r#"
+    // Custom deserializer for i128 values in untagged enums
+    fn deserialize_i128<'de, D>(des: D) -> Result<i128, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        struct I128Visitor;
+        impl<'de> serde::de::Visitor<'de> for I128Visitor {
+            type Value = i128;
+
+            fn expecting(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+                write!(f, "an integer or a string representing an integer")
+            }
+
+            fn visit_i64<E>(self, v: i64) -> Result<i128, E> {
+                Ok(v as i128)
+            }
+
+            fn visit_u64<E>(self, v: u64) -> Result<i128, E> {
+                Ok(v as i128)
+            }
+
+            fn visit_str<E>(self, v: &str) -> Result<i128, E>
+            where
+                E: serde::de::Error,
+            {
+                v.parse::<i128>().map_err(|e| serde::de::Error::custom(format!("invalid i128 string: {}", e)))
+            }
+
+            fn visit_string<E>(self, v: String) -> Result<i128, E>
+            where
+                E: serde::de::Error,
+            {
+                self.visit_str(&v)
+            }
+        }
+
+        des.deserialize_any(I128Visitor)
+    }
+
+    // Custom deserializer for Option<i128> values in untagged enums
+    fn deserialize_option_i128<'de, D>(des: D) -> Result<Option<i128>, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        struct OptionI128Visitor;
+        impl<'de> serde::de::Visitor<'de> for OptionI128Visitor {
+            type Value = Option<i128>;
+
+            fn expecting(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+                write!(f, "an integer, a string representing an integer, or null")
+            }
+
+            fn visit_none<E>(self) -> Result<Option<i128>, E> {
+                Ok(None)
+            }
+
+            fn visit_some<D>(self, deserializer: D) -> Result<Option<i128>, D::Error>
+            where
+                D: serde::Deserializer<'de>,
+            {
+                deserialize_i128(deserializer).map(Some)
+            }
+
+            fn visit_unit<E>(self) -> Result<Option<i128>, E> {
+                Ok(None)
+            }
+
+            fn visit_i64<E>(self, v: i64) -> Result<Option<i128>, E> {
+                Ok(Some(v as i128))
+            }
+
+            fn visit_u64<E>(self, v: u64) -> Result<Option<i128>, E> {
+                Ok(Some(v as i128))
+            }
+
+            fn visit_str<E>(self, v: &str) -> Result<Option<i128>, E>
+            where
+                E: serde::de::Error,
+            {
+                v.parse::<i128>().map(Some).map_err(|e| serde::de::Error::custom(format!("invalid i128 string: {}", e)))
+            }
+
+            fn visit_string<E>(self, v: String) -> Result<Option<i128>, E>
+            where
+                E: serde::de::Error,
+            {
+                self.visit_str(&v)
+            }
+        }
+
+        des.deserialize_any(OptionI128Visitor)
+    }
+"#;
+
+    // Insert the deserializer function inside the types module
+    if let Some(types_start) = content.find("pub mod types {") {
+        if let Some(insertion_point) = content[types_start..].find("/// Error types.") {
+            let full_insertion_point = types_start + insertion_point;
+            content.insert_str(full_insertion_point, i128_deserializer);
+        }
+    }
     let out_file = std::path::Path::new(&std::env::var("OUT_DIR").unwrap()).join("codegen.rs");
     std::fs::write(out_file, content).unwrap();
 }
@@ -499,5 +607,78 @@ impl syn::visit_mut::VisitMut for BuilderSendInstrumenter {
         }
 
         syn::visit_mut::visit_item_impl_mut(self, item);
+    }
+}
+
+struct UntaggedI128Injector;
+
+impl syn::visit_mut::VisitMut for UntaggedI128Injector {
+    fn visit_item_struct_mut(&mut self, item: &mut syn::ItemStruct) {
+        // Apply to ALL structs that have i128 fields, not just specific ones
+        if let syn::Fields::Named(fields) = &mut item.fields {
+            for field in &mut fields.named {
+                if let Some(field_name) = &field.ident {
+                    // Check if this field is i128 (direct or Option<i128>)
+                    let needs_custom_deserializer = match &field.ty {
+                        syn::Type::Path(type_path) => {
+                            // Check for direct i128
+                            if type_path.path.segments.len() == 1 {
+                                type_path.path.segments[0].ident == "i128"
+                            } else {
+                                let last_segment = type_path.path.segments.last().unwrap();
+                                if last_segment.ident == "i128" {
+                                    true
+                                } else if last_segment.ident == "Option" {
+                                    // Check if it's Option<i128>
+                                    if let syn::PathArguments::AngleBracketed(args) = &last_segment.arguments {
+                                        if let Some(syn::GenericArgument::Type(syn::Type::Path(inner_path))) = args.args.first() {
+                                            inner_path.path.segments.last().unwrap().ident == "i128"
+                                        } else {
+                                            false
+                                        }
+                                    } else {
+                                        false
+                                    }
+                                } else {
+                                    false
+                                }
+                            }
+                        }
+                        _ => false
+                    };
+                    
+                    if needs_custom_deserializer {
+                        // Check if it already has a deserialize_with attribute
+                        let already_has_custom = field.attrs.iter().any(|attr| {
+                            attr.path().is_ident("serde") && 
+                            format!("{:?}", attr).contains("deserialize_with")
+                        });
+                        
+                        if !already_has_custom {
+                            // Determine which deserializer to use
+                            let deserializer_name = if let syn::Type::Path(type_path) = &field.ty {
+                                let last_segment = type_path.path.segments.last().unwrap();
+                                if last_segment.ident == "Option" {
+                                    "deserialize_option_i128"
+                                } else {
+                                    "deserialize_i128"
+                                }
+                            } else {
+                                "deserialize_i128"
+                            };
+                            
+                            // Add the appropriate custom deserializer attribute
+                            field.attrs.push(parse_quote! {
+                                #[serde(deserialize_with = #deserializer_name)]
+                            });
+                            
+                            println!("cargo:warning=Added custom {} deserializer to {}.{}", deserializer_name, item.ident, field_name);
+                        }
+                    }
+                }
+            }
+        }
+
+        syn::visit_mut::visit_item_struct_mut(self, item);
     }
 }
