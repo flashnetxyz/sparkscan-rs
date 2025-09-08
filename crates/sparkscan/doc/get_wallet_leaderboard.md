@@ -37,7 +37,7 @@ tokio_test::block_on(async {
             entry.rank,
             entry.spark_address,
             entry.total_value_sats,
-            entry.total_value_usd.unwrap_or(0.0)
+            entry.total_value_usd
         );
     }
 });
