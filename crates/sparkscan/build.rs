@@ -134,7 +134,7 @@ fn main() {
 
     // Generate the code first
     let mut content = prettyplease::unparse(&ast);
-    
+
     // Inject the custom i128 deserializer function inside the types module
     let i128_deserializer = r#"
     // Custom deserializer for i128 values in untagged enums
@@ -630,8 +630,13 @@ impl syn::visit_mut::VisitMut for UntaggedI128Injector {
                                     true
                                 } else if last_segment.ident == "Option" {
                                     // Check if it's Option<i128>
-                                    if let syn::PathArguments::AngleBracketed(args) = &last_segment.arguments {
-                                        if let Some(syn::GenericArgument::Type(syn::Type::Path(inner_path))) = args.args.first() {
+                                    if let syn::PathArguments::AngleBracketed(args) =
+                                        &last_segment.arguments
+                                    {
+                                        if let Some(syn::GenericArgument::Type(syn::Type::Path(
+                                            inner_path,
+                                        ))) = args.args.first()
+                                        {
                                             inner_path.path.segments.last().unwrap().ident == "i128"
                                         } else {
                                             false
@@ -644,16 +649,16 @@ impl syn::visit_mut::VisitMut for UntaggedI128Injector {
                                 }
                             }
                         }
-                        _ => false
+                        _ => false,
                     };
-                    
+
                     if needs_custom_deserializer {
                         // Check if it already has a deserialize_with attribute
                         let already_has_custom = field.attrs.iter().any(|attr| {
-                            attr.path().is_ident("serde") && 
-                            format!("{:?}", attr).contains("deserialize_with")
+                            attr.path().is_ident("serde")
+                                && format!("{:?}", attr).contains("deserialize_with")
                         });
-                        
+
                         if !already_has_custom {
                             // Determine which deserializer to use
                             let deserializer_name = if let syn::Type::Path(type_path) = &field.ty {
@@ -666,13 +671,16 @@ impl syn::visit_mut::VisitMut for UntaggedI128Injector {
                             } else {
                                 "deserialize_i128"
                             };
-                            
+
                             // Add the appropriate custom deserializer attribute
                             field.attrs.push(parse_quote! {
                                 #[serde(deserialize_with = #deserializer_name)]
                             });
-                            
-                            println!("cargo:warning=Added custom {} deserializer to {}.{}", deserializer_name, item.ident, field_name);
+
+                            println!(
+                                "cargo:warning=Added custom {} deserializer to {}.{}",
+                                deserializer_name, item.ident, field_name
+                            );
                         }
                     }
                 }
