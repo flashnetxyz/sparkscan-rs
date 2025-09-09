@@ -384,9 +384,10 @@ impl syn::visit_mut::VisitMut for ClientHeadersModifier {
                             reqwest::header::USER_AGENT,
                             user_agent.parse().unwrap(),
                         );
+                        let auth_value = format!("Bearer {}", api_key);
                         headers.insert(
-                            "x-api-key",
-                            api_key.parse().unwrap(),
+                            reqwest::header::AUTHORIZATION,
+                            auth_value.parse().unwrap(),
                         );
 
                         #[cfg(not(target_arch = "wasm32"))]
@@ -515,9 +516,10 @@ impl syn::visit_mut::VisitMut for ClientTracingModifier {
                                     reqwest::header::USER_AGENT,
                                     user_agent.parse().unwrap(),
                                 );
+                                let auth_value = format!("Bearer {}", api_key);
                                 headers.insert(
-                                    "x-api-key",
-                                    api_key.parse().unwrap(),
+                                    reqwest::header::AUTHORIZATION,
+                                    auth_value.parse().unwrap(),
                                 );
 
                                 #[cfg(not(target_arch = "wasm32"))]
